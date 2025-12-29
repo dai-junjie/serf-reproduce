@@ -76,6 +76,7 @@ class BaseIndex {
     unsigned search_ef;
     unsigned query_range;
     float control_batch_threshold = 1;
+    unsigned num_entry_points = 10;  // Number of entry points for search
   };
 
   struct SearchInfo {

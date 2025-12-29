@@ -61,4 +61,9 @@ class DataWrapper {
 
   void generateRangeFilteringQueriesAndGroundtruthBenchmark(
       bool is_save_to_file, const string save_path = "");
+
+  // 生成不相交的固定大小范围查询（用于bucket-based场景）
+  void generatePartitionedQueriesAndGroundtruth(int num_partitions = 10,
+                                                 int queries_per_partition = 100,
+                                                 int window_size = 100);
 };

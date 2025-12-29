@@ -2,11 +2,14 @@
 
 #include "reader.h"
 #include "utils.h"
+#include <random>
+#include <algorithm>
+#include <omp.h>
 
 void SynthesizeQuerys(const vector<vector<float>> &nodes,
                       vector<vector<float>> &querys, const int query_num) {
   int dim = nodes.front().size();
-  std::default_random_engine e;
+  std::default_random_engine e(42);  // Fixed seed for reproducibility
   std::uniform_int_distribution<int> u(0, nodes.size() - 1);
   querys.clear();
   querys.resize(query_num);
@@ -468,4 +471,95 @@ void DataWrapper::generateRangeFilteringQueriesAndGroundtruthBenchmark(
   if (is_save_to_file) {
     cout << "Save GroundTruth to path: " << save_path << endl;
   }
+}
+
+// 生成不相交的固定大小范围查询（用于bucket-based场景）
+// 将整个数据集 [0, data_size-1] 分成 num_partitions 个相等的区间
+// 使用 querys 文件中的独立查询向量
+// OPTIMIZED: Uses batched multi-threaded groundtruth generation
+void DataWrapper::generatePartitionedQueriesAndGroundtruth(int num_partitions,
+                                                           int queries_per_partition,
+                                                           int window_size) {
+  cout << "Generating Partitioned Queries..." << endl;
+
+  std::default_random_engine generator(42);  // Fixed seed for reproducibility
+
+  cout << "Data size: " << this->data_size << endl;
+  cout << "Number of partitions: " << num_partitions << endl;
+  cout << "Queries per partition: " << queries_per_partition << endl;
+  cout << "Available querys: " << this->querys.size() << endl;
+
+  // 计算每个分区的大小（尽量相等）
+  int partition_size = this->data_size / num_partitions;
+
+  cout << "Partition size: " << partition_size << endl;
+
+  // 计算总共需要多少个查询
+  int total_queries_needed = num_partitions * queries_per_partition;
+
+  if (this->querys.size() < total_queries_needed) {
+    cout << "Warning: Not enough querys! Need " << total_queries_needed
+         << ", but only have " << this->querys.size() << endl;
+    cout << "Will use all available querys." << endl;
+  }
+
+  // Calculate queries per partition (evenly distribute all available queries)
+  int actual_queries_per_partition = this->querys.size() / num_partitions;
+  if (actual_queries_per_partition == 0 && !this->querys.empty()) {
+    actual_queries_per_partition = 1;
+  }
+  int remaining_queries = this->querys.size() % num_partitions;
+
+  cout << "Actual queries per partition: " << actual_queries_per_partition
+       << " (with " << remaining_queries << " extra)" << endl;
+
+  int query_idx = 0;  // 当前使用的 query 索引
+
+  for (int i = 0; i < num_partitions; i++) {
+    int l_bound = i * partition_size;
+    int r_bound = (i == num_partitions - 1) ? (this->data_size - 1) : (l_bound + partition_size - 1);
+
+    // Collect queries for this partition (evenly distributed)
+    vector<vector<float>> partition_queries;
+    vector<int> partition_query_ids;
+
+    // First 'remaining_queries' partitions get one extra query
+    int queries_for_this_partition = actual_queries_per_partition;
+    if (i < remaining_queries) {
+      queries_for_this_partition++;
+    }
+
+    for (int q = 0; q < queries_for_this_partition; q++) {
+      if (query_idx >= this->querys.size()) {
+        break;
+      }
+      partition_queries.push_back(this->querys[query_idx]);
+      partition_query_ids.push_back(query_idx);
+      query_idx++;
+    }
+
+    if (partition_queries.empty()) {
+      break;
+    }
+
+    // Print partition info and groundtruth generation on one line
+    cout << "Partition " << i << ": [" << l_bound << ", " << r_bound
+         << "] (size: " << (r_bound - l_bound + 1) << ") - "
+         << partition_queries.size() << " queries, " << omp_get_max_threads() << " threads" << endl;
+    auto batched_gt = greedyNearestBatched(this->nodes, partition_queries,
+                                           l_bound, r_bound, this->query_k);
+
+    // Store results
+    for (size_t j = 0; j < batched_gt.size(); j++) {
+      this->query_ids.push_back(partition_query_ids[j]);
+      this->query_ranges.emplace_back(l_bound, r_bound);
+      this->groundtruth.emplace_back(batched_gt[j]);
+    }
+
+    if (query_idx >= this->querys.size()) {
+      break;
+    }
+  }
+
+  cout << "Generated " << this->query_ids.size() << " query-range pairs" << endl;
 }

@@ -82,6 +82,7 @@ int main(int argc, char **argv) {
   string ef_con_str = "100";
   string ef_max_str = "500";
   string ef_search_str = "16,64,256";
+  string recursion_type_str = "MAX_POS";  // Default: MaxLeap
   string version = "Benchmark";
 
   for (int i = 0; i < argc; i++) {
@@ -97,6 +98,7 @@ int main(int argc, char **argv) {
     if (arg == "-ef_search") ef_search_str = string(argv[i + 1]);
     if (arg == "-method") method = string(argv[i + 1]);
     if (arg == "-full_range") full_range = true;
+    if (arg == "-recursion_type") recursion_type_str = string(argv[i + 1]);
   }
 
   index_k_list = str2vec(indexk_str);
@@ -141,7 +143,14 @@ int main(int argc, char **argv) {
                                         ef_construction, ef_max);
         {
           cout << endl;
-          i_params.recursion_type = BaseIndex::IndexParams::MAX_POS;
+          // Set recursion type based on command line argument
+          if (recursion_type_str == "MIN_POS") {
+            i_params.recursion_type = BaseIndex::IndexParams::MIN_POS;
+          } else if (recursion_type_str == "MID_POS") {
+            i_params.recursion_type = BaseIndex::IndexParams::MID_POS;
+          } else {
+            i_params.recursion_type = BaseIndex::IndexParams::MAX_POS;  // Default
+          }
           SeRF::IndexSegmentGraph2D index(&ss, &data_wrapper);
           // rangeindex::RecursionIndex index(&ss, &data_wrapper);
           BaseIndex::SearchInfo search_info(&data_wrapper, &i_params, "SeRF_2D",

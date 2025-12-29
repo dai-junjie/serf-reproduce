@@ -1,0 +1,469 @@
+Running HNSW Baseline Bucket Benchmark (1M data)...
+================================
+
+================================
+Running with -b 20
+================================
+Use SSE
+Use AVX
+Index Construct Parallelly
+=== HNSW Baseline Benchmark Configuration ===
+Dataset: deep
+Data size: 1000000
+Number of buckets: 20
+Queries per bucket: 1000
+Total queries: 20000
+Query K: 10
+===========================================
+Load vecs from: data/HDFS.log-1M.fvecs
+# of vecs: 1000000
+Generating Partitioned Queries...
+Data size: 1000000
+Number of partitions: 20
+Queries per partition: 1000
+Available querys: 10000
+Partition size: 50000
+Warning: Not enough querys! Need 20000, but only have 10000
+Will use all available querys.
+Actual queries per partition: 500 (with 0 extra)
+Partition 0: [0, 49999] (size: 50000) - 500 queries, 32 threads
+Partition 1: [50000, 99999] (size: 50000) - 500 queries, 32 threads
+Partition 2: [100000, 149999] (size: 50000) - 500 queries, 32 threads
+Partition 3: [150000, 199999] (size: 50000) - 500 queries, 32 threads
+Partition 4: [200000, 249999] (size: 50000) - 500 queries, 32 threads
+Partition 5: [250000, 299999] (size: 50000) - 500 queries, 32 threads
+Partition 6: [300000, 349999] (size: 50000) - 500 queries, 32 threads
+Partition 7: [350000, 399999] (size: 50000) - 500 queries, 32 threads
+Partition 8: [400000, 449999] (size: 50000) - 500 queries, 32 threads
+Partition 9: [450000, 499999] (size: 50000) - 500 queries, 32 threads
+Partition 10: [500000, 549999] (size: 50000) - 500 queries, 32 threads
+Partition 11: [550000, 599999] (size: 50000) - 500 queries, 32 threads
+Partition 12: [600000, 649999] (size: 50000) - 500 queries, 32 threads
+Partition 13: [650000, 699999] (size: 50000) - 500 queries, 32 threads
+Partition 14: [700000, 749999] (size: 50000) - 500 queries, 32 threads
+Partition 15: [750000, 799999] (size: 50000) - 500 queries, 32 threads
+Partition 16: [800000, 849999] (size: 50000) - 500 queries, 32 threads
+Partition 17: [850000, 899999] (size: 50000) - 500 queries, 32 threads
+Partition 18: [900000, 949999] (size: 50000) - 500 queries, 32 threads
+Partition 19: [950000, 999999] (size: 50000) - 500 queries, 32 threads
+Generated 10000 query-range pairs
+
+------------------------------------------------------------
+--- Building HNSW Baseline Index ---
+Parameters: ef_construction=100, index_k=8
+Building baseline graph: KnnFirst-hnsw
+Done
+# of Avg. Neighbors: 6.86626
+Index built, running searches...
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+
+================================================================================
+=== SUMMARY TABLE (HNSW Baseline: 20 buckets) ===
+================================================================================
+ef_search   Recall      QPS            Comps       
+--------------------------------------------------------------------------------
+128         0.7553      166            14734.7     
+256         0.8102      97             24844.0     
+512         0.8552      60             39858.8     
+1024        0.8871      38             62343.4     
+================================================================================
+
+=== Benchmark completed ===
+
+
+================================
+Running with -b 30
+================================
+Use SSE
+Use AVX
+Index Construct Parallelly
+=== HNSW Baseline Benchmark Configuration ===
+Dataset: deep
+Data size: 1000000
+Number of buckets: 30
+Queries per bucket: 1000
+Total queries: 30000
+Query K: 10
+===========================================
+Load vecs from: data/HDFS.log-1M.fvecs
+# of vecs: 1000000
+Generating Partitioned Queries...
+Data size: 1000000
+Number of partitions: 30
+Queries per partition: 1000
+Available querys: 10000
+Partition size: 33333
+Warning: Not enough querys! Need 30000, but only have 10000
+Will use all available querys.
+Actual queries per partition: 333 (with 10 extra)
+Partition 0: [0, 33332] (size: 33333) - 334 queries, 32 threads
+Partition 1: [33333, 66665] (size: 33333) - 334 queries, 32 threads
+Partition 2: [66666, 99998] (size: 33333) - 334 queries, 32 threads
+Partition 3: [99999, 133331] (size: 33333) - 334 queries, 32 threads
+Partition 4: [133332, 166664] (size: 33333) - 334 queries, 32 threads
+Partition 5: [166665, 199997] (size: 33333) - 334 queries, 32 threads
+Partition 6: [199998, 233330] (size: 33333) - 334 queries, 32 threads
+Partition 7: [233331, 266663] (size: 33333) - 334 queries, 32 threads
+Partition 8: [266664, 299996] (size: 33333) - 334 queries, 32 threads
+Partition 9: [299997, 333329] (size: 33333) - 334 queries, 32 threads
+Partition 10: [333330, 366662] (size: 33333) - 333 queries, 32 threads
+Partition 11: [366663, 399995] (size: 33333) - 333 queries, 32 threads
+Partition 12: [399996, 433328] (size: 33333) - 333 queries, 32 threads
+Partition 13: [433329, 466661] (size: 33333) - 333 queries, 32 threads
+Partition 14: [466662, 499994] (size: 33333) - 333 queries, 32 threads
+Partition 15: [499995, 533327] (size: 33333) - 333 queries, 32 threads
+Partition 16: [533328, 566660] (size: 33333) - 333 queries, 32 threads
+Partition 17: [566661, 599993] (size: 33333) - 333 queries, 32 threads
+Partition 18: [599994, 633326] (size: 33333) - 333 queries, 32 threads
+Partition 19: [633327, 666659] (size: 33333) - 333 queries, 32 threads
+Partition 20: [666660, 699992] (size: 33333) - 333 queries, 32 threads
+Partition 21: [699993, 733325] (size: 33333) - 333 queries, 32 threads
+Partition 22: [733326, 766658] (size: 33333) - 333 queries, 32 threads
+Partition 23: [766659, 799991] (size: 33333) - 333 queries, 32 threads
+Partition 24: [799992, 833324] (size: 33333) - 333 queries, 32 threads
+Partition 25: [833325, 866657] (size: 33333) - 333 queries, 32 threads
+Partition 26: [866658, 899990] (size: 33333) - 333 queries, 32 threads
+Partition 27: [899991, 933323] (size: 33333) - 333 queries, 32 threads
+Partition 28: [933324, 966656] (size: 33333) - 333 queries, 32 threads
+Partition 29: [966657, 999999] (size: 33343) - 333 queries, 32 threads
+Generated 10000 query-range pairs
+
+------------------------------------------------------------
+--- Building HNSW Baseline Index ---
+Parameters: ef_construction=100, index_k=8
+Building baseline graph: KnnFirst-hnsw
+Done
+# of Avg. Neighbors: 6.86626
+Index built, running searches...
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+
+================================================================================
+=== SUMMARY TABLE (HNSW Baseline: 30 buckets) ===
+================================================================================
+ef_search   Recall      QPS            Comps       
+--------------------------------------------------------------------------------
+128         0.7653      110            22153.4     
+256         0.8176      73             33553.6     
+512         0.8583      47             51913.9     
+1024        0.8913      30             80324.2     
+================================================================================
+
+=== Benchmark completed ===
+
+
+================================
+Running with -b 40
+================================
+Use SSE
+Use AVX
+Index Construct Parallelly
+=== HNSW Baseline Benchmark Configuration ===
+Dataset: deep
+Data size: 1000000
+Number of buckets: 40
+Queries per bucket: 1000
+Total queries: 40000
+Query K: 10
+===========================================
+Load vecs from: data/HDFS.log-1M.fvecs
+# of vecs: 1000000
+Generating Partitioned Queries...
+Data size: 1000000
+Number of partitions: 40
+Queries per partition: 1000
+Available querys: 10000
+Partition size: 25000
+Warning: Not enough querys! Need 40000, but only have 10000
+Will use all available querys.
+Actual queries per partition: 250 (with 0 extra)
+Partition 0: [0, 24999] (size: 25000) - 250 queries, 32 threads
+Partition 1: [25000, 49999] (size: 25000) - 250 queries, 32 threads
+Partition 2: [50000, 74999] (size: 25000) - 250 queries, 32 threads
+Partition 3: [75000, 99999] (size: 25000) - 250 queries, 32 threads
+Partition 4: [100000, 124999] (size: 25000) - 250 queries, 32 threads
+Partition 5: [125000, 149999] (size: 25000) - 250 queries, 32 threads
+Partition 6: [150000, 174999] (size: 25000) - 250 queries, 32 threads
+Partition 7: [175000, 199999] (size: 25000) - 250 queries, 32 threads
+Partition 8: [200000, 224999] (size: 25000) - 250 queries, 32 threads
+Partition 9: [225000, 249999] (size: 25000) - 250 queries, 32 threads
+Partition 10: [250000, 274999] (size: 25000) - 250 queries, 32 threads
+Partition 11: [275000, 299999] (size: 25000) - 250 queries, 32 threads
+Partition 12: [300000, 324999] (size: 25000) - 250 queries, 32 threads
+Partition 13: [325000, 349999] (size: 25000) - 250 queries, 32 threads
+Partition 14: [350000, 374999] (size: 25000) - 250 queries, 32 threads
+Partition 15: [375000, 399999] (size: 25000) - 250 queries, 32 threads
+Partition 16: [400000, 424999] (size: 25000) - 250 queries, 32 threads
+Partition 17: [425000, 449999] (size: 25000) - 250 queries, 32 threads
+Partition 18: [450000, 474999] (size: 25000) - 250 queries, 32 threads
+Partition 19: [475000, 499999] (size: 25000) - 250 queries, 32 threads
+Partition 20: [500000, 524999] (size: 25000) - 250 queries, 32 threads
+Partition 21: [525000, 549999] (size: 25000) - 250 queries, 32 threads
+Partition 22: [550000, 574999] (size: 25000) - 250 queries, 32 threads
+Partition 23: [575000, 599999] (size: 25000) - 250 queries, 32 threads
+Partition 24: [600000, 624999] (size: 25000) - 250 queries, 32 threads
+Partition 25: [625000, 649999] (size: 25000) - 250 queries, 32 threads
+Partition 26: [650000, 674999] (size: 25000) - 250 queries, 32 threads
+Partition 27: [675000, 699999] (size: 25000) - 250 queries, 32 threads
+Partition 28: [700000, 724999] (size: 25000) - 250 queries, 32 threads
+Partition 29: [725000, 749999] (size: 25000) - 250 queries, 32 threads
+Partition 30: [750000, 774999] (size: 25000) - 250 queries, 32 threads
+Partition 31: [775000, 799999] (size: 25000) - 250 queries, 32 threads
+Partition 32: [800000, 824999] (size: 25000) - 250 queries, 32 threads
+Partition 33: [825000, 849999] (size: 25000) - 250 queries, 32 threads
+Partition 34: [850000, 874999] (size: 25000) - 250 queries, 32 threads
+Partition 35: [875000, 899999] (size: 25000) - 250 queries, 32 threads
+Partition 36: [900000, 924999] (size: 25000) - 250 queries, 32 threads
+Partition 37: [925000, 949999] (size: 25000) - 250 queries, 32 threads
+Partition 38: [950000, 974999] (size: 25000) - 250 queries, 32 threads
+Partition 39: [975000, 999999] (size: 25000) - 250 queries, 32 threads
+Generated 10000 query-range pairs
+
+------------------------------------------------------------
+--- Building HNSW Baseline Index ---
+Parameters: ef_construction=100, index_k=8
+Building baseline graph: KnnFirst-hnsw
+Done
+# of Avg. Neighbors: 6.86626
+Index built, running searches...
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+
+================================================================================
+=== SUMMARY TABLE (HNSW Baseline: 40 buckets) ===
+================================================================================
+ef_search   Recall      QPS            Comps       
+--------------------------------------------------------------------------------
+128         0.7980      82             28890.7     
+256         0.8486      53             44972.0     
+512         0.8889      35             68245.8     
+1024        0.9205      23             102533.5    
+================================================================================
+
+=== Benchmark completed ===
+
+
+================================
+Running with -b 50
+================================
+Use SSE
+Use AVX
+Index Construct Parallelly
+=== HNSW Baseline Benchmark Configuration ===
+Dataset: deep
+Data size: 1000000
+Number of buckets: 50
+Queries per bucket: 1000
+Total queries: 50000
+Query K: 10
+===========================================
+Load vecs from: data/HDFS.log-1M.fvecs
+# of vecs: 1000000
+Generating Partitioned Queries...
+Data size: 1000000
+Number of partitions: 50
+Queries per partition: 1000
+Available querys: 10000
+Partition size: 20000
+Warning: Not enough querys! Need 50000, but only have 10000
+Will use all available querys.
+Actual queries per partition: 200 (with 0 extra)
+Partition 0: [0, 19999] (size: 20000) - 200 queries, 32 threads
+Partition 1: [20000, 39999] (size: 20000) - 200 queries, 32 threads
+Partition 2: [40000, 59999] (size: 20000) - 200 queries, 32 threads
+Partition 3: [60000, 79999] (size: 20000) - 200 queries, 32 threads
+Partition 4: [80000, 99999] (size: 20000) - 200 queries, 32 threads
+Partition 5: [100000, 119999] (size: 20000) - 200 queries, 32 threads
+Partition 6: [120000, 139999] (size: 20000) - 200 queries, 32 threads
+Partition 7: [140000, 159999] (size: 20000) - 200 queries, 32 threads
+Partition 8: [160000, 179999] (size: 20000) - 200 queries, 32 threads
+Partition 9: [180000, 199999] (size: 20000) - 200 queries, 32 threads
+Partition 10: [200000, 219999] (size: 20000) - 200 queries, 32 threads
+Partition 11: [220000, 239999] (size: 20000) - 200 queries, 32 threads
+Partition 12: [240000, 259999] (size: 20000) - 200 queries, 32 threads
+Partition 13: [260000, 279999] (size: 20000) - 200 queries, 32 threads
+Partition 14: [280000, 299999] (size: 20000) - 200 queries, 32 threads
+Partition 15: [300000, 319999] (size: 20000) - 200 queries, 32 threads
+Partition 16: [320000, 339999] (size: 20000) - 200 queries, 32 threads
+Partition 17: [340000, 359999] (size: 20000) - 200 queries, 32 threads
+Partition 18: [360000, 379999] (size: 20000) - 200 queries, 32 threads
+Partition 19: [380000, 399999] (size: 20000) - 200 queries, 32 threads
+Partition 20: [400000, 419999] (size: 20000) - 200 queries, 32 threads
+Partition 21: [420000, 439999] (size: 20000) - 200 queries, 32 threads
+Partition 22: [440000, 459999] (size: 20000) - 200 queries, 32 threads
+Partition 23: [460000, 479999] (size: 20000) - 200 queries, 32 threads
+Partition 24: [480000, 499999] (size: 20000) - 200 queries, 32 threads
+Partition 25: [500000, 519999] (size: 20000) - 200 queries, 32 threads
+Partition 26: [520000, 539999] (size: 20000) - 200 queries, 32 threads
+Partition 27: [540000, 559999] (size: 20000) - 200 queries, 32 threads
+Partition 28: [560000, 579999] (size: 20000) - 200 queries, 32 threads
+Partition 29: [580000, 599999] (size: 20000) - 200 queries, 32 threads
+Partition 30: [600000, 619999] (size: 20000) - 200 queries, 32 threads
+Partition 31: [620000, 639999] (size: 20000) - 200 queries, 32 threads
+Partition 32: [640000, 659999] (size: 20000) - 200 queries, 32 threads
+Partition 33: [660000, 679999] (size: 20000) - 200 queries, 32 threads
+Partition 34: [680000, 699999] (size: 20000) - 200 queries, 32 threads
+Partition 35: [700000, 719999] (size: 20000) - 200 queries, 32 threads
+Partition 36: [720000, 739999] (size: 20000) - 200 queries, 32 threads
+Partition 37: [740000, 759999] (size: 20000) - 200 queries, 32 threads
+Partition 38: [760000, 779999] (size: 20000) - 200 queries, 32 threads
+Partition 39: [780000, 799999] (size: 20000) - 200 queries, 32 threads
+Partition 40: [800000, 819999] (size: 20000) - 200 queries, 32 threads
+Partition 41: [820000, 839999] (size: 20000) - 200 queries, 32 threads
+Partition 42: [840000, 859999] (size: 20000) - 200 queries, 32 threads
+Partition 43: [860000, 879999] (size: 20000) - 200 queries, 32 threads
+Partition 44: [880000, 899999] (size: 20000) - 200 queries, 32 threads
+Partition 45: [900000, 919999] (size: 20000) - 200 queries, 32 threads
+Partition 46: [920000, 939999] (size: 20000) - 200 queries, 32 threads
+Partition 47: [940000, 959999] (size: 20000) - 200 queries, 32 threads
+Partition 48: [960000, 979999] (size: 20000) - 200 queries, 32 threads
+Partition 49: [980000, 999999] (size: 20000) - 200 queries, 32 threads
+Generated 10000 query-range pairs
+
+------------------------------------------------------------
+--- Building HNSW Baseline Index ---
+Parameters: ef_construction=100, index_k=8
+Building baseline graph: KnnFirst-hnsw
+Done
+# of Avg. Neighbors: 6.86626
+Index built, running searches...
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+
+================================================================================
+=== SUMMARY TABLE (HNSW Baseline: 50 buckets) ===
+================================================================================
+ef_search   Recall      QPS            Comps       
+--------------------------------------------------------------------------------
+128         0.7913      78             30778.5     
+256         0.8377      49             48583.8     
+512         0.8777      31             74688.1     
+1024        0.9129      19             114825.1    
+================================================================================
+
+=== Benchmark completed ===
+
+
+================================
+Running with -b 60
+================================
+Use SSE
+Use AVX
+Index Construct Parallelly
+=== HNSW Baseline Benchmark Configuration ===
+Dataset: deep
+Data size: 1000000
+Number of buckets: 60
+Queries per bucket: 1000
+Total queries: 60000
+Query K: 10
+===========================================
+Load vecs from: data/HDFS.log-1M.fvecs
+# of vecs: 1000000
+Generating Partitioned Queries...
+Data size: 1000000
+Number of partitions: 60
+Queries per partition: 1000
+Available querys: 10000
+Partition size: 16666
+Warning: Not enough querys! Need 60000, but only have 10000
+Will use all available querys.
+Actual queries per partition: 166 (with 40 extra)
+Partition 0: [0, 16665] (size: 16666) - 167 queries, 32 threads
+Partition 1: [16666, 33331] (size: 16666) - 167 queries, 32 threads
+Partition 2: [33332, 49997] (size: 16666) - 167 queries, 32 threads
+Partition 3: [49998, 66663] (size: 16666) - 167 queries, 32 threads
+Partition 4: [66664, 83329] (size: 16666) - 167 queries, 32 threads
+Partition 5: [83330, 99995] (size: 16666) - 167 queries, 32 threads
+Partition 6: [99996, 116661] (size: 16666) - 167 queries, 32 threads
+Partition 7: [116662, 133327] (size: 16666) - 167 queries, 32 threads
+Partition 8: [133328, 149993] (size: 16666) - 167 queries, 32 threads
+Partition 9: [149994, 166659] (size: 16666) - 167 queries, 32 threads
+Partition 10: [166660, 183325] (size: 16666) - 167 queries, 32 threads
+Partition 11: [183326, 199991] (size: 16666) - 167 queries, 32 threads
+Partition 12: [199992, 216657] (size: 16666) - 167 queries, 32 threads
+Partition 13: [216658, 233323] (size: 16666) - 167 queries, 32 threads
+Partition 14: [233324, 249989] (size: 16666) - 167 queries, 32 threads
+Partition 15: [249990, 266655] (size: 16666) - 167 queries, 32 threads
+Partition 16: [266656, 283321] (size: 16666) - 167 queries, 32 threads
+Partition 17: [283322, 299987] (size: 16666) - 167 queries, 32 threads
+Partition 18: [299988, 316653] (size: 16666) - 167 queries, 32 threads
+Partition 19: [316654, 333319] (size: 16666) - 167 queries, 32 threads
+Partition 20: [333320, 349985] (size: 16666) - 167 queries, 32 threads
+Partition 21: [349986, 366651] (size: 16666) - 167 queries, 32 threads
+Partition 22: [366652, 383317] (size: 16666) - 167 queries, 32 threads
+Partition 23: [383318, 399983] (size: 16666) - 167 queries, 32 threads
+Partition 24: [399984, 416649] (size: 16666) - 167 queries, 32 threads
+Partition 25: [416650, 433315] (size: 16666) - 167 queries, 32 threads
+Partition 26: [433316, 449981] (size: 16666) - 167 queries, 32 threads
+Partition 27: [449982, 466647] (size: 16666) - 167 queries, 32 threads
+Partition 28: [466648, 483313] (size: 16666) - 167 queries, 32 threads
+Partition 29: [483314, 499979] (size: 16666) - 167 queries, 32 threads
+Partition 30: [499980, 516645] (size: 16666) - 167 queries, 32 threads
+Partition 31: [516646, 533311] (size: 16666) - 167 queries, 32 threads
+Partition 32: [533312, 549977] (size: 16666) - 167 queries, 32 threads
+Partition 33: [549978, 566643] (size: 16666) - 167 queries, 32 threads
+Partition 34: [566644, 583309] (size: 16666) - 167 queries, 32 threads
+Partition 35: [583310, 599975] (size: 16666) - 167 queries, 32 threads
+Partition 36: [599976, 616641] (size: 16666) - 167 queries, 32 threads
+Partition 37: [616642, 633307] (size: 16666) - 167 queries, 32 threads
+Partition 38: [633308, 649973] (size: 16666) - 167 queries, 32 threads
+Partition 39: [649974, 666639] (size: 16666) - 167 queries, 32 threads
+Partition 40: [666640, 683305] (size: 16666) - 166 queries, 32 threads
+Partition 41: [683306, 699971] (size: 16666) - 166 queries, 32 threads
+Partition 42: [699972, 716637] (size: 16666) - 166 queries, 32 threads
+Partition 43: [716638, 733303] (size: 16666) - 166 queries, 32 threads
+Partition 44: [733304, 749969] (size: 16666) - 166 queries, 32 threads
+Partition 45: [749970, 766635] (size: 16666) - 166 queries, 32 threads
+Partition 46: [766636, 783301] (size: 16666) - 166 queries, 32 threads
+Partition 47: [783302, 799967] (size: 16666) - 166 queries, 32 threads
+Partition 48: [799968, 816633] (size: 16666) - 166 queries, 32 threads
+Partition 49: [816634, 833299] (size: 16666) - 166 queries, 32 threads
+Partition 50: [833300, 849965] (size: 16666) - 166 queries, 32 threads
+Partition 51: [849966, 866631] (size: 16666) - 166 queries, 32 threads
+Partition 52: [866632, 883297] (size: 16666) - 166 queries, 32 threads
+Partition 53: [883298, 899963] (size: 16666) - 166 queries, 32 threads
+Partition 54: [899964, 916629] (size: 16666) - 166 queries, 32 threads
+Partition 55: [916630, 933295] (size: 16666) - 166 queries, 32 threads
+Partition 56: [933296, 949961] (size: 16666) - 166 queries, 32 threads
+Partition 57: [949962, 966627] (size: 16666) - 166 queries, 32 threads
+Partition 58: [966628, 983293] (size: 16666) - 166 queries, 32 threads
+Partition 59: [983294, 999999] (size: 16706) - 166 queries, 32 threads
+Generated 10000 query-range pairs
+
+------------------------------------------------------------
+--- Building HNSW Baseline Index ---
+Parameters: ef_construction=100, index_k=8
+Building baseline graph: KnnFirst-hnsw
+Done
+# of Avg. Neighbors: 6.86626
+Index built, running searches...
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+Save result to :../exp/search/bucket_benchmark-Benchmark-HNSW_Baseline-deep-1000000.csv
+
+================================================================================
+=== SUMMARY TABLE (HNSW Baseline: 60 buckets) ===
+================================================================================
+ef_search   Recall      QPS            Comps       
+--------------------------------------------------------------------------------
+128         0.8118      67             34633.5     
+256         0.8636      42             55425.8     
+512         0.8998      27             85268.9     
+1024        0.9289      18             128477.1    
+================================================================================
+
+=== Benchmark completed ===
+
+
+All benchmarks completed!

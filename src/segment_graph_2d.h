@@ -855,13 +855,18 @@ class IndexSegmentGraph2D : public BaseIndex {
     search_info->cal_dist_time = 0;
     search_info->fetch_nns_time = 0;
     num_search_comparison = 0;
-    // finding enters
+    // finding enters - use configurable number of entry points
     vector<int> enter_list;
     {
+      unsigned num_points = search_params->num_entry_points;
+      if (num_points < 1) num_points = 1;
       int lbound = query_bound.first;
-      int interval = (query_bound.second - lbound) / 3;
-      for (size_t i = 0; i < 3; i++) {
-        int point = lbound + interval * i;
+      int range_size = query_bound.second - lbound;
+      int interval = (num_points > 1) ? (range_size / (num_points - 1)) : 0;
+      for (size_t i = 0; i < num_points; i++) {
+        int point = (num_points > 1) ? (lbound + interval * i) : lbound;
+        // Ensure last point is within range
+        if (point > query_bound.second) point = query_bound.second;
         float dist = EuclideanDistance(data_wrapper->nodes[point], query);
         candidate_set.emplace(-dist, point);
         enter_list.emplace_back(point);
@@ -913,8 +918,8 @@ class IndexSegmentGraph2D : public BaseIndex {
             continue;
           visited_nn_num++;
 
-          // visiting more than K neighbors, break. for reverse nn
-          if (visited_nn_num > 2 * index_params_->K) break;
+          // OPTIMIZED: increased from 2*K to 4*K for better recall
+          if (visited_nn_num > 4 * index_params_->K) break;
           if (!(visited_array[candidate_id] == visited_array_tag)) {
             visited_array[candidate_id] = visited_array_tag;
 
