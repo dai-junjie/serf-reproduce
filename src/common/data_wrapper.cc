@@ -381,6 +381,7 @@ void DataWrapper::generateHalfBoundedQueriesAndGroundtruthBenchmark(
   query_range_list.emplace_back(this->data_size * 0.01);
   query_range_list.emplace_back(this->data_size * 0.05);
   query_range_list.emplace_back(this->data_size * 0.1);
+  query_range_list.emplace_back(this->data_size * 0.2);
   query_range_list.emplace_back(this->data_size * 0.5);
   query_range_list.emplace_back(this->data_size);
 
@@ -428,6 +429,7 @@ void DataWrapper::generateRangeFilteringQueriesAndGroundtruthBenchmark(
   query_range_list.emplace_back(this->data_size * 0.01);
   query_range_list.emplace_back(this->data_size * 0.05);
   query_range_list.emplace_back(this->data_size * 0.1);
+  query_range_list.emplace_back(this->data_size * 0.2);
   query_range_list.emplace_back(this->data_size * 0.5);
   query_range_list.emplace_back(this->data_size);
 

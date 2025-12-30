@@ -1,0 +1,14 @@
+nohup: 忽略输入
+========================================
+SeRF Insert Performance Test
+========================================
+Datasets: WIT-2048 GIST-960 SIFT-128
+Data Sizes (1M%): 100000 200000 500000 1000000
+Fixed: M=64, K_construction=400, K_Search=400
+========================================
+
+========================================
+Testing Dataset: WIT-2048
+Path: /home/djj/dataset/wit-image-random-1M.fvecs
+========================================
+  Size: 100000 (10%)

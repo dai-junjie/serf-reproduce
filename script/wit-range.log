@@ -1,0 +1,85 @@
+nohup: 忽略输入
+========================================
+WIT-Image Query Range Testing
+========================================
+Dataset: local
+Data Size: 1000000
+Query Ranges: 10%, 20%, 50%, 100%
+Fixed: M=64, K=100, K_Search=400
+Strategies: MinLeap, MidLeap, MaxLeap
+Output CSV: /home/djj/code/experiment/SeRF/results/wit_range_test/results_20251230_093143.csv
+========================================
+
+========================================
+Test: Query Range Sweep (3 strategies)
+Ranges = {10%, 20%, 50%, 100%}
+M=64, K=100, K_Search=400
+========================================
+  Running MinLeap...
+    Range 10%: recall=0.9264, qps=190
+    Range 20%: recall=0.9067, qps=147
+    Range 50%: recall=0.8900, qps=88
+    Range 100%: recall=0.8995, qps=47
+  Running MidLeap...
+    Range 10%: recall=0.9292, qps=160
+    Range 20%: recall=0.9101, qps=119
+    Range 50%: recall=0.8908, qps=86
+    Range 100%: recall=0.9010, qps=58
+  Running MaxLeap...
+    Range 10%: recall=0.9297, qps=190
+    Range 20%: recall=0.9099, qps=140
+    Range 50%: recall=0.8911, qps=94
+    Range 100%: recall=0.9015, qps=61
+  Done
+
+========================================
+All tests completed!
+
+Results saved to: /home/djj/code/experiment/SeRF/results/wit_range_test/results_20251230_093143.csv
+
+Sample data:
+leap_strategy,param_type,M,K,K_Search,range_pct,recall,qps,comps
+MinLeap,Range,64,100,400,10,0.9264,190,5740
+MinLeap,Range,64,100,400,20,0.9067,147,7765
+MinLeap,Range,64,100,400,50,0.8900,88,11718
+MinLeap,Range,64,100,400,100,0.8995,47,18157
+MidLeap,Range,64,100,400,10,0.9292,160,5729
+MidLeap,Range,64,100,400,20,0.9101,119,7745
+MidLeap,Range,64,100,400,50,0.8908,86,11668
+MidLeap,Range,64,100,400,100,0.9010,58,18082
+MaxLeap,Range,64,100,400,10,0.9297,190,5723
+MaxLeap,Range,64,100,400,20,0.9099,140,7741
+MaxLeap,Range,64,100,400,50,0.8911,94,11662
+MaxLeap,Range,64,100,400,100,0.9015,61,18105
+
+Total records: 13
+========================================
+
+========================================
+Generating plots...
+========================================
+Data loaded:
+   leap_strategy param_type   M    K  K_Search  range_pct  recall  qps  comps
+0        MinLeap      Range  64  100       400         10  0.9264  190   5740
+1        MinLeap      Range  64  100       400         20  0.9067  147   7765
+2        MinLeap      Range  64  100       400         50  0.8900   88  11718
+3        MinLeap      Range  64  100       400        100  0.8995   47  18157
+4        MidLeap      Range  64  100       400         10  0.9292  160   5729
+5        MidLeap      Range  64  100       400         20  0.9101  119   7745
+6        MidLeap      Range  64  100       400         50  0.8908   86  11668
+7        MidLeap      Range  64  100       400        100  0.9010   58  18082
+8        MaxLeap      Range  64  100       400         10  0.9297  190   5723
+9        MaxLeap      Range  64  100       400         20  0.9099  140   7741
+10       MaxLeap      Range  64  100       400         50  0.8911   94  11662
+11       MaxLeap      Range  64  100       400        100  0.9015   61  18105
+
+Saved: plots_20251230_093143/query_range.png
+Saved: plots_20251230_093143/query_range_log.png
+
+All plots saved!
+
+========================================
+Complete! Results and plots:
+  CSV: /home/djj/code/experiment/SeRF/results/wit_range_test/results_20251230_093143.csv
+  Plots: /home/djj/code/experiment/SeRF/results/wit_range_test/plots_20251230_093143
+========================================

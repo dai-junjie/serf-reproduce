@@ -1,0 +1,63 @@
+nohup: 忽略输入
+========================================
+WIT-Image Query Range Testing (HNSW)
+========================================
+Dataset: local
+Data Size: 1000000
+Query Ranges: 10%, 20%, 50%, 100%
+Fixed: M=64, K_construction=400, K_Search=400
+Output CSV: /home/djj/code/experiment/SeRF/results/hnsw_range_test/results_20251230_093502.csv
+========================================
+
+========================================
+Test: Query Range Sweep
+Ranges = {10%, 20%, 50%, 100%}
+M=64, K_construction=400, K_Search=400
+========================================
+  Range 1%: recall=0.9971, qps=6
+  Range 5%: recall=0.9932, qps=19
+  Range 10%: recall=0.9894, qps=30
+  Range 20%: recall=0.9776, qps=50
+  Range 50%: recall=0.9384, qps=101
+  Range 100%: recall=0.8903, qps=174
+  Done
+
+========================================
+All tests completed!
+
+Results saved to: /home/djj/code/experiment/SeRF/results/hnsw_range_test/results_20251230_093502.csv
+
+Sample data:
+method,param_type,M,K,K_Search,range_pct,recall,qps,comps
+HNSW,Range,64,400,400,1,0.9971,6,268637
+HNSW,Range,64,400,400,5,0.9932,19,104503
+HNSW,Range,64,400,400,10,0.9894,30,66008
+HNSW,Range,64,400,400,20,0.9776,50,40564
+HNSW,Range,64,400,400,50,0.9384,101,20623
+HNSW,Range,64,400,400,100,0.8903,174,12076
+
+Total records: 7
+========================================
+
+========================================
+Generating plots...
+========================================
+Data loaded:
+  method param_type   M    K  K_Search  range_pct  recall  qps   comps
+0   HNSW      Range  64  400       400          1  0.9971    6  268637
+1   HNSW      Range  64  400       400          5  0.9932   19  104503
+2   HNSW      Range  64  400       400         10  0.9894   30   66008
+3   HNSW      Range  64  400       400         20  0.9776   50   40564
+4   HNSW      Range  64  400       400         50  0.9384  101   20623
+5   HNSW      Range  64  400       400        100  0.8903  174   12076
+
+Saved: plots_20251230_093502/query_range.png
+Saved: plots_20251230_093502/query_range_log.png
+
+All plots saved!
+
+========================================
+Complete! Results and plots:
+  CSV: /home/djj/code/experiment/SeRF/results/hnsw_range_test/results_20251230_093502.csv
+  Plots: /home/djj/code/experiment/SeRF/results/hnsw_range_test/plots_20251230_093502
+========================================

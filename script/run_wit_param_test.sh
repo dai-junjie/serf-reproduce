@@ -8,7 +8,7 @@ set -e
 # Config
 DATASET="local"
 DATA_SIZE=1000000
-DATASET_PATH="/home/djj/dataset/wit-image.fvecs"
+DATASET_PATH="/home/djj/dataset/wit-image-random-1M.fvecs"
 QUERY_PATH=""
 QUERY_NUM=1000
 QUERY_K=10
