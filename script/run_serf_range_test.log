@@ -1,0 +1,21 @@
+nohup: 忽略输入
+========================================
+SeRF Query Range Testing - Multiple Datasets
+========================================
+Datasets: WIT-2048 GIST-960 SIFT-128
+Query Ranges: 10%, 20%, 50%, 100%
+Strategy: MaxLeap (fixed)
+Output CSV: /home/djj/code/experiment/SeRF/results/serf_range_test/results_20251230_215219.csv
+
+Dataset Configurations:
+  WIT-2048:   M=64,  K=400, K_Search=400
+  SIFT-128:   M=16,  K=400, K_Search=200
+  GIST-960:   M=64,  K=400, K_Search=400
+========================================
+
+========================================
+Testing Dataset: WIT-2048
+Path: /home/djj/dataset/wit-image-random-1M.fvecs
+Config: M=64, K=400, K_Search=400
+========================================
+  Running MaxLeap...

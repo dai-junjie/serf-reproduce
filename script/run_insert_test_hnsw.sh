@@ -1,23 +1,20 @@
 #!/bin/bash
 # HNSW Baseline Insert Performance Test - Multi-Dataset Comparison
 # Tests Insert Per Second (IPS) across different datasets and scales
+# Each dataset uses same parameters as SeRF for fair comparison
 
 set -e
 
-# Dataset configurations
+# Dataset configurations: name:path:M:K
+# Note: K_Search is not needed for insert test
+# Same parameters as SeRF for fair comparison
 declare -A DATASETS
-DATASETS["SIFT-128"]="/home/djj/code/experiment/SeRF/data/sift_base.fvecs"
-DATASETS["GIST-960"]="/home/djj/code/experiment/timestampRAG/data/GIST1M/gist_base.fvecs"
-DATASETS["WIT-2048"]="/home/djj/dataset/wit-image-random-1M.fvecs"
+DATASETS["WIT-2048"]="/home/djj/dataset/wit-image-random-1M.fvecs:64:400"
+DATASETS["SIFT-128"]="/home/djj/code/experiment/SeRF/data/sift_base.fvecs:16:400"
+DATASETS["GIST-960"]="/home/djj/code/experiment/timestampRAG/data/GIST1M/gist_base.fvecs:64:400"
 
 # Test different data sizes (10%, 20%, 50%, 100% of 1M)
 DATA_SIZE_LIST=(100000 200000 500000 1000000)
-
-# Fixed parameters (matching SeRF config)
-INDEX_K=64          # M parameter
-EF_CONSTRUCTION=400 # K (ef_construction) parameter
-QUERY_NUM=100
-QUERY_K=10
 
 BINARY="./build/benchmark/benchmark_hnsw_arbitrary"
 OUTPUT_DIR="./results/insert_test_hnsw"
@@ -30,7 +27,11 @@ echo "HNSW Baseline Insert Performance Test"
 echo "========================================"
 echo "Datasets: ${!DATASETS[@]}"
 echo "Data Sizes (1M%): ${DATA_SIZE_LIST[@]}"
-echo "Fixed: M=$INDEX_K, K_construction=$EF_CONSTRUCTION, K_Search=400"
+echo ""
+echo "Dataset Configurations (same as SeRF):"
+echo "  WIT-2048:   M=64,  K=400"
+echo "  SIFT-128:  M=16,  K=400"
+echo "  GIST-960:   M=64,  K=400"
 echo "========================================"
 echo ""
 
@@ -39,7 +40,7 @@ echo "dataset,data_size,index_k,ef_construction,build_time,ips" > "$OUTPUT_DIR/i
 
 # Test each dataset
 for DATASET_NAME in "${!DATASETS[@]}"; do
-    DATASET_PATH="${DATASETS[$DATASET_NAME]}"
+    IFS=':' read -r DATASET_PATH INDEX_K EF_CONSTRUCTION <<< "${DATASETS[$DATASET_NAME]}"
 
     if [ ! -f "$DATASET_PATH" ]; then
         echo "WARNING: Dataset not found: $DATASET_PATH"
@@ -49,6 +50,7 @@ for DATASET_NAME in "${!DATASETS[@]}"; do
     echo "========================================"
     echo "Testing Dataset: $DATASET_NAME"
     echo "Path: $DATASET_PATH"
+    echo "Config: M=$INDEX_K, K=$EF_CONSTRUCTION"
     echo "========================================"
 
     for DATA_SIZE in "${DATA_SIZE_LIST[@]}"; do

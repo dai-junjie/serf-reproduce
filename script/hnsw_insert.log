@@ -11,3 +11,9 @@ Testing Dataset: WIT-2048
 Path: /home/djj/dataset/wit-image-random-1M.fvecs
 ========================================
   Size: 100000 (10%)
+    Build Time: 303.1261460s, IPS: 329.89
+  Size: 200000 (20%)
+    Build Time: 1382.0387130s, IPS: 144.71
+  Size: 500000 (50%)
+    Build Time: 4289.3861600s, IPS: 116.56
+  Size: 1000000 (100%)

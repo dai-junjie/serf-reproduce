@@ -1,0 +1,41 @@
+nohup: 忽略输入
+========================================
+Milvus Search Test - All Datasets
+========================================
+Datasets: WIT-2048 GIST-960 SIFT-128
+Data Size: 1000000 (1M)
+Query Ranges: 10 20 50 100%
+Search Runs: 10
+Output: ./results/milvus_search_test
+========================================
+
+========================================
+Testing Dataset: WIT-2048
+Path: /home/djj/dataset/wit-image-random-1M.fvecs
+Dim: 2048, M=64, efConstruction=400, ef=400
+========================================
+========================================
+Milvus Search Test: WIT-2048
+Collection: wit_2048_search_1m
+Data Size: 1000000, Dim: 2048
+========================================
+Traceback (most recent call last):
+  File "/home/djj/code/experiment/lightCagra/scripts/milvus_search_test.py", line 166, in <module>
+    main()
+  File "/home/djj/code/experiment/lightCagra/scripts/milvus_search_test.py", line 68, in main
+    connections.connect("default", host=args.host, port=args.port)
+  File "/home/djj/miniconda3/envs/ai/lib/python3.12/site-packages/pymilvus/orm/connections.py", line 422, in connect
+    connect_milvus(**kwargs, user=user, password=password, token=token, db_name=db_name)
+  File "/home/djj/miniconda3/envs/ai/lib/python3.12/site-packages/pymilvus/orm/connections.py", line 376, in connect_milvus
+    raise e from e
+  File "/home/djj/miniconda3/envs/ai/lib/python3.12/site-packages/pymilvus/orm/connections.py", line 370, in connect_milvus
+    gh._wait_for_channel_ready(timeout=timeout)
+  File "/home/djj/miniconda3/envs/ai/lib/python3.12/site-packages/pymilvus/client/grpc_handler.py", line 223, in _wait_for_channel_ready
+    raise MilvusException(
+pymilvus.exceptions.MilvusException: <MilvusException: (code=2, message=Fail connecting to server on localhost:19530, illegal connection params or server unavailable)>
+
+========================================
+Testing Dataset: GIST-960
+Path: /home/djj/code/experiment/timestampRAG/data/GIST1M/gist_base.fvecs
+Dim: 960, M=16, efConstruction=400, ef=300
+========================================
