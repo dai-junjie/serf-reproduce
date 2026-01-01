@@ -4,6 +4,7 @@ Milvus Search Test - Single Dataset
 Tests Recall and QPS for different query ranges
 """
 import time
+import sys
 import numpy as np
 import argparse
 from pymilvus import (
@@ -159,7 +160,8 @@ def main():
         avg_latency = (t_end - t_start) / args.runs * 1000
         qps = 1.0 / ((t_end - t_start) / args.runs)
 
-        result_ids = set(int(hit.id) for hit in results[0])
+        # Milvus returns SearchResult object - access hits differently
+        result_ids = set(int(hit_id) for hit_id in results[0])
         recall = len(result_ids & gt_ids) / args.top_k if args.top_k > 0 else 0.0
         result_count = len(results[0])
 

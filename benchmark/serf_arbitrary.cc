@@ -77,6 +77,7 @@ int main(int argc, char **argv) {
   vector<int> ef_max_list = {500};
   vector<int> searchef_para_range_list = {16, 64, 256};
   bool full_range = false;
+  bool generate_gt_only = false;  // Only generate groundtruth, skip index building
 
   string indexk_str = "8";
   string ef_con_str = "100";
@@ -99,6 +100,7 @@ int main(int argc, char **argv) {
     if (arg == "-method") method = string(argv[i + 1]);
     if (arg == "-full_range") full_range = true;
     if (arg == "-recursion_type") recursion_type_str = string(argv[i + 1]);
+    if (arg == "-generate_gt_only") generate_gt_only = true;
   }
 
   index_k_list = str2vec(indexk_str);
@@ -108,18 +110,65 @@ int main(int argc, char **argv) {
 
   assert(index_k_list.size() != 0);
   assert(ef_construction_list.size() != 0);
-  // assert(groundtruth_path != "");
 
   DataWrapper data_wrapper(query_num, query_k, dataset, data_size);
   data_wrapper.readData(dataset_path, query_path);
 
-  // Generate groundtruth
-  if (full_range)
-    data_wrapper.generateRangeFilteringQueriesAndGroundtruth(false);
-  else
-    data_wrapper.generateRangeFilteringQueriesAndGroundtruthBenchmark(false);
-  // Or you can load groundtruth from the given path
-  // data_wrapper.LoadGroundtruth(groundtruth_path);
+  // Mode 1: Generate groundtruth only (no index building, no search)
+  if (generate_gt_only) {
+    cout << "=== Generating Groundtruth Only ===" << endl;
+    if (full_range)
+      data_wrapper.generateRangeFilteringQueriesAndGroundtruth(!groundtruth_path.empty(), groundtruth_path);
+    else
+      data_wrapper.generateRangeFilteringQueriesAndGroundtruthBenchmark(!groundtruth_path.empty(), groundtruth_path);
+
+    cout << "Groundtruth generated: " << data_wrapper.query_ids.size() << " queries" << endl;
+    if (!groundtruth_path.empty()) {
+      cout << "Saved groundtruth to: " << groundtruth_path << endl;
+
+      // Save query vectors to a file (replace .csv with .fvecs)
+      string query_file = groundtruth_path;
+      size_t pos = query_file.find(".csv");
+      if (pos != string::npos) {
+        query_file = query_file.substr(0, pos) + ".fvecs";
+      } else {
+        query_file += ".fvecs";
+      }
+      cout << "Saving queries to: " << query_file << endl;
+      SaveQueriesToFile(query_file, data_wrapper.querys);
+      cout << "Query file saved: " << query_file << endl;
+    }
+    cout << "=== Done. Exiting (no index built). ===" << endl;
+    return 0;
+  }
+
+  // Mode 2: Load existing groundtruth or generate new one
+  if (groundtruth_path != "") {
+    // Derive query file path from groundtruth path
+    string query_file = "";
+    if (!query_path.empty()) {
+      query_file = query_path;
+    } else {
+      // Try to derive from groundtruth path
+      query_file = groundtruth_path;
+      size_t pos = query_file.find(".csv");
+      if (pos != string::npos) {
+        query_file = query_file.substr(0, pos) + ".fvecs";
+      } else {
+        query_file += ".fvecs";
+      }
+    }
+
+    cout << "Loading groundtruth from: " << groundtruth_path << endl;
+    cout << "Loading queries from: " << query_file << endl;
+    data_wrapper.LoadGroundtruth(groundtruth_path, query_file);
+  } else {
+    cout << "Generating groundtruth..." << endl;
+    if (full_range)
+      data_wrapper.generateRangeFilteringQueriesAndGroundtruth(false);
+    else
+      data_wrapper.generateRangeFilteringQueriesAndGroundtruthBenchmark(false);
+  }
 
   assert(data_wrapper.query_ids.size() == data_wrapper.query_ranges.size());
 

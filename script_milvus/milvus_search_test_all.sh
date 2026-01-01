@@ -21,7 +21,7 @@ DATASETS["WIT-2048"]="/home/djj/dataset/wit-image-random-1M.fvecs"
 DATA_SIZE=1000000
 
 # Query ranges to test (as percentages)
-RANGE_PCTS=(10 20 50 100)
+RANGE_PCTS=(1 10 20 50 100)
 
 # Search parameters
 SEARCH_RUNS=10
@@ -49,8 +49,8 @@ echo ""
 CSV_FILE="$OUTPUT_DIR/search_test_${TIMESTAMP}.csv"
 echo "dataset,data_size,dim,M,efConstruction,ef,range_pct,range_width,latency_ms,qps,recall,result_count" > "$CSV_FILE"
 
-# Test each dataset
-for DATASET_NAME in "${!DATASETS[@]}"; do
+# Test each dataset in explicit order
+for DATASET_NAME in "SIFT-128" "GIST-960" "WIT-2048"; do
     DATASET_PATH="${DATASETS[$DATASET_NAME]}"
 
     if [ ! -f "$DATASET_PATH" ]; then

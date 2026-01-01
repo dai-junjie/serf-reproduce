@@ -1,0 +1,28 @@
+nohup: 忽略输入
+==================================================
+Step 1: Pre-generating Groundtruth (Parallel)
+==================================================
+  [SKIP] All groundtruth files already exist!
+Using 15 groundtruth files (3 datasets × 5 ranges)
+
+==================================================
+Step 2: Running Parameter Sweep Tests (Dataset by Dataset)
+==================================================
+Datasets: ['SIFT-128', 'GIST-960', 'WIT-2048']
+Query Ranges: [1, 10, 20, 50, 100]%
+Strategy: MaxLeap
+Parameter Grid: M=[8, 16, 32, 64], K=[100, 200, 400], K_Search=[100, 200, 400]
+Parallel Threads per Dataset: 30
+OMP Threads per Task: 1
+Output CSV: /home/djj/code/experiment/SeRF/results/serf_range_test/results_20260101_214840.csv
+==================================================
+
+Dataset SIFT-128: 180 tasks (36 params × 5 ranges)
+==================================================
+Processing Dataset: SIFT-128
+==================================================
+Base dataset: /home/djj/code/experiment/SeRF/data/sift_base.fvecs
+Total tasks: 180
+Parallel threads: 30
+==================================================
+

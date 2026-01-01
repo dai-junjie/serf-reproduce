@@ -60,7 +60,12 @@ void SaveToCSVRow(const string &path, const int idx, const int l_bound,
                   const double &search_time, const vector<int> &gt,
                   const vector<float> &pts) {
   std::ofstream file;
-  file.open(path, std::ios_base::app);
+  // Use trunc mode for first entry (idx=0) to clear file, append for rest
+  if (idx == 0) {
+    file.open(path, std::ios_base::trunc);
+  } else {
+    file.open(path, std::ios_base::app);
+  }
   if (file) {
     file << idx << "," << l_bound << "," << r_bound << "," << pos_range << ","
          << real_search_key_range << "," << K_neighbor << "," << search_time
@@ -225,14 +230,38 @@ void DataWrapper::generateHalfBoundedQueriesAndGroundtruth(
   }
 }
 
-void DataWrapper::LoadGroundtruth(const string &gt_path) {
+void SaveQueriesToFile(const string &query_path, const vector<vector<float>> &querys) {
+  // Save queries in fvecs format
+  std::ofstream file(query_path, std::ios::binary);
+  if (!file.is_open()) {
+    cout << "Failed to open query file for writing: " << query_path << endl;
+    return;
+  }
+
+  int dim = querys.front().size();
+  for (const auto &query : querys) {
+    file.write(reinterpret_cast<const char*>(&dim), sizeof(int));
+    file.write(reinterpret_cast<const char*>(query.data()), dim * sizeof(float));
+  }
+  file.close();
+}
+
+void DataWrapper::LoadGroundtruth(const string &gt_path, const string &query_path) {
   this->groundtruth.clear();
   this->query_ranges.clear();
   this->query_ids.clear();
-  cout << "Loading Groundtruth from" << gt_path << "...";
+  cout << "Loading Groundtruth from " << gt_path << "...";
   ReadGroundtruthQuery(this->groundtruth, this->query_ranges, this->query_ids,
                        gt_path);
-  cout << "    Done!" << endl;
+  cout << " Done!" << endl;
+
+  // Load query vectors if path is provided
+  if (!query_path.empty()) {
+    this->querys.clear();
+    cout << "Loading Queries from " << query_path << "...";
+    this->querys = ReadTopN(query_path, "fvecs", -1);
+    cout << " Done! Loaded " << this->querys.size() << " queries" << endl;
+  }
 }
 
 void DataWrapper::generateRangeFilteringQueriesAndGroundtruthScalability(
@@ -423,53 +452,79 @@ void DataWrapper::generateRangeFilteringQueriesAndGroundtruthBenchmark(
     bool is_save_to_file, const string save_path) {
   timeval t1, t2;
 
-  vector<int> query_range_list;
-  query_range_list.emplace_back(this->data_size * 0.001);
-  query_range_list.emplace_back(this->data_size * 0.005);
-  query_range_list.emplace_back(this->data_size * 0.01);
-  query_range_list.emplace_back(this->data_size * 0.05);
-  query_range_list.emplace_back(this->data_size * 0.1);
-  query_range_list.emplace_back(this->data_size * 0.2);
-  query_range_list.emplace_back(this->data_size * 0.5);
-  query_range_list.emplace_back(this->data_size);
-
-  cout << "Generating Range Filtering Groundtruth...";
-  cout << endl << "Ranges: " << endl;
-  print_set(query_range_list);
-  // generate groundtruth
-
-  std::default_random_engine e;
-
-  for (auto range : query_range_list) {
-    std::uniform_int_distribution<int> u_lbound(0,
-                                                this->data_size - range - 80);
-    for (int i = 0; i < this->querys.size(); i++) {
-      int l_bound = u_lbound(e);
-      int r_bound = l_bound + range - 1;
-      if (range == this->data_size) {
-        l_bound = 0;
-        r_bound = this->data_size - 1;
-      }
-      int search_key_range = r_bound - l_bound + 1;
-      // if (this->real_keys)
-      //   search_key_range =
-      //       this->nodes_keys.at(r_bound) - this->nodes_keys.at(l_bound);
-      query_ranges.emplace_back(std::make_pair(l_bound, r_bound));
-      double greedy_time;
-      gettimeofday(&t1, NULL);
-      auto gt = greedyNearest(this->nodes, this->querys.at(i), l_bound, r_bound,
-                              this->query_k);
-      gettimeofday(&t2, NULL);
-      CountTime(t1, t2, greedy_time);
-      groundtruth.emplace_back(gt);
-      query_ids.emplace_back(i);
-      if (is_save_to_file) {
-        SaveToCSVRow(save_path, i, l_bound, r_bound, range, search_key_range,
-                     this->query_k, greedy_time, gt, this->querys.at(i));
-      }
+  // Parse range percentage from filename (e.g., "R10" means 10%)
+  // Only generate GT for that single range
+  int target_range_pct = 100;  // Default to 100%
+  size_t pos = save_path.find("_R");
+  if (pos != string::npos) {
+    size_t end_pos = save_path.find("_", pos + 2);
+    if (end_pos == string::npos) {
+      end_pos = save_path.find(".", pos + 2);
+    }
+    string range_str = save_path.substr(pos + 2, end_pos - pos - 2);
+    try {
+      target_range_pct = std::stoi(range_str);
+    } catch (...) {
+      target_range_pct = 100;
     }
   }
 
+  // Calculate the actual range size
+  int target_range = (target_range_pct == 100) ? this->data_size : (this->data_size * target_range_pct / 100);
+
+  cout << "Generating Range Filtering Groundtruth for " << target_range_pct << "% range (size=" << target_range << ")" << endl;
+  cout << "Using " << omp_get_max_threads() << " OMP threads" << endl;
+
+  std::default_random_engine e(42);  // Fixed seed for reproducibility
+  double accu_time = 0.0;
+
+  // Only process the single target range
+  std::uniform_int_distribution<int> u_lbound(0,
+                                              this->data_size - target_range - 80);
+
+  // Prepare queries and bounds for this range
+  vector<vector<float>> range_queries;
+  vector<pair<int, int>> range_bounds;
+  vector<int> range_query_ids;
+
+  for (int i = 0; i < this->querys.size(); i++) {
+    int l_bound = u_lbound(e);
+    int r_bound = l_bound + target_range - 1;
+    if (target_range == this->data_size) {
+      l_bound = 0;
+      r_bound = this->data_size - 1;
+    }
+    range_queries.push_back(this->querys.at(i));
+    range_bounds.emplace_back(l_bound, r_bound);
+    range_query_ids.push_back(i);
+  }
+
+  // Generate groundtruth
+  gettimeofday(&t1, NULL);
+  for (size_t i = 0; i < range_queries.size(); i++) {
+    auto gt = greedyNearest(this->nodes, range_queries[i], range_bounds[i].first,
+                            range_bounds[i].second, this->query_k);
+    groundtruth.emplace_back(gt);
+    query_ids.emplace_back(range_query_ids[i]);
+    query_ranges.push_back(range_bounds[i]);
+  }
+  gettimeofday(&t2, NULL);
+  double greedy_time;
+  CountTime(t1, t2, greedy_time);
+  accu_time += greedy_time;
+
+  // Save results (clear file on first write)
+  if (is_save_to_file) {
+    for (size_t i = 0; i < range_queries.size(); i++) {
+      int search_key_range = range_bounds[i].second - range_bounds[i].first + 1;
+      // Use i==0 to clear file on first write
+      SaveToCSVRow(save_path, range_query_ids[i], range_bounds[i].first, range_bounds[i].second,
+                   target_range, search_key_range, this->query_k, greedy_time / this->querys.size(),
+                   groundtruth[groundtruth.size() - range_queries.size() + i], range_queries[i]);
+    }
+  }
+
+  cout << " Done!" << endl << "Groundtruth Time: " << accu_time << endl;
   if (is_save_to_file) {
     cout << "Save GroundTruth to path: " << save_path << endl;
   }

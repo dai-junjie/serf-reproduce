@@ -1,0 +1,80 @@
+nohup: 忽略输入
+========================================
+Milvus Search Test - All Datasets
+========================================
+Datasets: WIT-2048 GIST-960 SIFT-128
+Data Size: 1000000 (1M)
+Query Ranges: 1 10 20 50 100%
+Search Runs: 10
+Output: ./results/milvus_search_test
+========================================
+
+========================================
+Testing Dataset: SIFT-128
+Path: /home/djj/code/experiment/SeRF/data/sift_base.fvecs
+Dim: 128, M=16, efConstruction=400, ef=200
+========================================
+========================================
+Milvus Search Test: SIFT-128
+Collection: sift_128_search_1m
+Data Size: 1000000, Dim: 128
+========================================
+Using existing collection: sift_128_search_1m
+Loading vectors for ground truth...
+Traceback (most recent call last):
+  File "/home/djj/code/experiment/SeRF/script_milvus/milvus_search_test.py", line 171, in <module>
+    main()
+  File "/home/djj/code/experiment/SeRF/script_milvus/milvus_search_test.py", line 162, in main
+    result_ids = set(int(hit_id) for hit_id in results[0].ids)
+                                               ^^^^^^^^^^^^^^
+AttributeError: 'SearchResult' object has no attribute 'ids'
+
+========================================
+Testing Dataset: GIST-960
+Path: /home/djj/code/experiment/timestampRAG/data/GIST1M/gist_base.fvecs
+Dim: 960, M=64, efConstruction=400, ef=400
+========================================
+========================================
+Milvus Search Test: GIST-960
+Collection: gist_960_search_1m
+Data Size: 1000000, Dim: 960
+========================================
+Using existing collection: gist_960_search_1m
+Loading vectors for ground truth...
+Traceback (most recent call last):
+  File "/home/djj/code/experiment/SeRF/script_milvus/milvus_search_test.py", line 171, in <module>
+    main()
+  File "/home/djj/code/experiment/SeRF/script_milvus/milvus_search_test.py", line 162, in main
+    result_ids = set(int(hit_id) for hit_id in results[0].ids)
+                                               ^^^^^^^^^^^^^^
+AttributeError: 'SearchResult' object has no attribute 'ids'
+
+========================================
+Testing Dataset: WIT-2048
+Path: /home/djj/dataset/wit-image-random-1M.fvecs
+Dim: 2048, M=64, efConstruction=400, ef=400
+========================================
+========================================
+Milvus Search Test: WIT-2048
+Collection: wit_2048_search_1m
+Data Size: 1000000, Dim: 2048
+========================================
+Using existing collection: wit_2048_search_1m
+Loading vectors for ground truth...
+Traceback (most recent call last):
+  File "/home/djj/code/experiment/SeRF/script_milvus/milvus_search_test.py", line 171, in <module>
+    main()
+  File "/home/djj/code/experiment/SeRF/script_milvus/milvus_search_test.py", line 162, in main
+    result_ids = set(int(hit_id) for hit_id in results[0].ids)
+                                               ^^^^^^^^^^^^^^
+AttributeError: 'SearchResult' object has no attribute 'ids'
+
+========================================
+All tests completed!
+Results: ./results/milvus_search_test/search_test_20251231_170154.csv
+========================================
+
+Generating plots...
+Traceback (most recent call last):
+  File "<string>", line 5, in <module>
+NameError: name 'sys' is not defined. Did you forget to import 'sys'?

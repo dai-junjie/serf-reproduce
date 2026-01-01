@@ -40,7 +40,8 @@ DEFAULT_K=100
 DEFAULT_KS=400
 
 # Leap strategies to test
-STRATEGIES=("MIN_POS:MinLeap" "MID_POS:MidLeap" "MAX_POS:MaxLeap")
+# STRATEGIES=("MIN_POS:MinLeap" "MID_POS:MidLeap" "MAX_POS:MaxLeap")
+STRATEGIES=("MAX_POS:MaxLeap")
 
 # ============================================
 # Test 1: Vary M with three leap strategies
