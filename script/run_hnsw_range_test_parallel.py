@@ -2,6 +2,7 @@
 """
 Parallel HNSW Range Testing
 Runs parameter sweeps for multiple datasets with parallel execution
+Datasets are processed sequentially (one at a time) for memory efficiency
 """
 
 import subprocess
@@ -40,24 +41,25 @@ K_SEARCH_VALUES = [100, 200, 400]
 
 # Execution settings
 DATA_SIZE = 1000000
-NUM_THREADS = 28  # Number of parallel tasks
+NUM_THREADS = 30  # Number of parallel tasks
 OMP_THREADS = 1   # Threads per task (single-threaded)
 
 # ============== TASK GENERATION ==============
 
 def generate_tasks():
-    """Generate all test tasks"""
-    tasks = []
+    """Generate all test tasks grouped by dataset"""
+    tasks_by_dataset = {}
 
     for dataset_name, dataset_path in DATASETS.items():
         if not os.path.exists(dataset_path):
             print(f"WARNING: Dataset not found: {dataset_path}")
             continue
 
+        tasks_by_dataset[dataset_name] = []
         for m in M_VALUES:
             for k in K_VALUES:
                 for k_search in K_SEARCH_VALUES:
-                    tasks.append({
+                    tasks_by_dataset[dataset_name].append({
                         'dataset': dataset_name,
                         'dataset_path': dataset_path,
                         'm': m,
@@ -66,7 +68,7 @@ def generate_tasks():
                         'data_size': DATA_SIZE,
                     })
 
-    return tasks
+    return tasks_by_dataset
 
 # ============== TASK EXECUTION ==============
 
@@ -157,7 +159,12 @@ def run_single_task(task, result_queue, lock):
             for res in results:
                 result_queue.put(res)
 
-        print(f"[OK] {dataset_name}: M={m}, K={k}, K_Search={k_search} -> {len(results)} results (build_time={build_time:.2f}s, ips={ips:.0f})")
+        # Print summary after putting results
+        if results:
+            res = results[0]
+            print(f"  [OK] {dataset_name}: M={m:2d}, K={k:3d}, KS={k_search:3d} -> build={build_time:.2f}s, recall={res['recall']:.3f}")
+        else:
+            print(f"  [WARN] {dataset_name}: M={m}, K={k}, KS={k_search} -> No results parsed")
 
     except subprocess.CalledProcessError as e:
         print(f"[ERROR] {dataset_name}: M={m}, K={k}, K_Search={k_search} - {e}")
@@ -187,14 +194,14 @@ def main():
     # Initialize CSV with header
     csv_header = "dataset,method,param_type,M,K,K_Search,range_pct,recall,qps,comps,build_time,ips"
 
-    # Generate all tasks
-    tasks = generate_tasks()
-    total_tasks = len(tasks)
+    # Generate all tasks grouped by dataset
+    tasks_by_dataset = generate_tasks()
+    total_tasks = sum(len(tasks) for tasks in tasks_by_dataset.values())
 
     print("=" * 50)
     print("HNSW Baseline Range Testing - Parallel Execution")
     print("=" * 50)
-    print(f"Datasets: {list(DATASETS.keys())}")
+    print(f"Datasets: {list(tasks_by_dataset.keys())}")
     print(f"Query Ranges: {RANGE_PCTS}%")
     print(f"Parameter Grid: M={M_VALUES}, K={K_VALUES}, K_Search={K_SEARCH_VALUES}")
     print(f"Total Tasks: {total_tasks}")
@@ -204,65 +211,81 @@ def main():
     print("=" * 50)
     print()
 
-    # Create task queue
-    task_queue = queue.Queue()
-    result_queue = queue.Queue()
-    lock = threading.Lock()
-
-    for task in tasks:
-        task_queue.put(task)
-
     # Write CSV header
     with open(COMBINED_CSV, 'w') as f:
         f.write(csv_header + '\n')
 
-    # Start worker threads
-    threads = []
-    for i in range(NUM_THREADS):
-        t = threading.Thread(target=worker, args=(task_queue, result_queue, lock))
-        t.start()
-        threads.append(t)
-
-    # Monitor progress
-    completed = 0
-
-    # Start a thread to write results to CSV incrementally
+    # Process datasets sequentially
+    global_completed = 0
     csv_lock = threading.Lock()
 
-    def result_writer():
-        while True:
-            try:
-                result = result_queue.get(timeout=1)
-                with csv_lock:
-                    with open(COMBINED_CSV, 'a') as f:
-                        row = f"{result['dataset']},{result['method']},{result['param_type']},{result['M']},{result['K']},{result['K_Search']},{result['range_pct']},{result['recall']},{result['qps']},{result['comps']},{result['build_time']},{result['ips']}\n"
-                        f.write(row)
-                nonlocal completed
-                completed += 1
-                if completed % 10 == 0:
-                    print(f"[Progress] {completed}/{total_tasks} tasks completed")
-                result_queue.task_done()
-            except queue.Empty:
-                break
+    for dataset_idx, (dataset_name, dataset_tasks) in enumerate(tasks_by_dataset.items(), 1):
+        print("=" * 50)
+        print(f"[{dataset_idx}/{len(tasks_by_dataset)}] Processing Dataset: {dataset_name}")
+        print("=" * 50)
+        print(f"Tasks: {len(dataset_tasks)}")
+        print(f"Data path: {dataset_tasks[0]['dataset_path']}")
+        print("=" * 50)
 
-    # Start result writer thread
-    writer_thread = threading.Thread(target=result_writer)
-    writer_thread.start()
+        # Create task queue for this dataset
+        task_queue = queue.Queue()
+        result_queue = queue.Queue()
+        lock = threading.Lock()
+        dataset_completed = 0
 
-    # Wait for all workers to complete
-    for t in threads:
-        t.join()
+        for task in dataset_tasks:
+            task_queue.put(task)
 
-    # Wait for result writer to finish
-    while not result_queue.empty():
-        import time
-        time.sleep(0.1)
-    writer_thread.join()
+        def result_writer():
+            nonlocal dataset_completed, global_completed
+            retry_count = 0
+            while True:
+                try:
+                    result = result_queue.get(timeout=60)  # Increased timeout for long-running tasks
+                    with csv_lock:
+                        with open(COMBINED_CSV, 'a') as f:
+                            row = f"{result['dataset']},{result['method']},{result['param_type']},{result['M']},{result['K']},{result['K_Search']},{result['range_pct']},{result['recall']},{result['qps']},{result['comps']},{result['build_time']},{result['ips']}\n"
+                            f.write(row)
+                    dataset_completed += 1
+                    global_completed += 1
+                    retry_count = 0  # Reset retry count on success
+                    if dataset_completed % 10 == 0:
+                        print(f"  [Progress] {dataset_completed}/{len(dataset_tasks)} results collected (total: {global_completed}/{total_tasks})")
+                    result_queue.task_done()
+                except queue.Empty:
+                    # Only break if all workers are done
+                    if all(not t.is_alive() for t in threads):
+                        break
+                    else:
+                        retry_count += 1
+                        if retry_count <= 2:  # Only print first 2 retries
+                            print(f"  [Waiting] Workers still running... ({len([t for t in threads if t.is_alive()])} active)")
+                        continue
 
-    print()
+        # Start result writer thread
+        writer_thread = threading.Thread(target=result_writer)
+        writer_thread.start()
+
+        # Start worker threads
+        threads = []
+        for i in range(NUM_THREADS):
+            t = threading.Thread(target=worker, args=(task_queue, result_queue, lock))
+            t.start()
+            threads.append(t)
+
+        # Wait for all workers to complete
+        for t in threads:
+            t.join()
+
+        # Wait for result writer to finish
+        writer_thread.join()
+
+        print(f"  [Done] Dataset {dataset_name} completed: {dataset_completed} results")
+        print()
+
     print("=" * 50)
     print("All tests completed!")
-    print(f"Total records: {completed}")
+    print(f"Total records: {global_completed}")
     print(f"Results saved to: {COMBINED_CSV}")
     print("=" * 50)
 

@@ -19,12 +19,8 @@ BINARY = "/home/djj/code/experiment/SeRF/build/benchmark/serf_arbitrary"
 
 # Output directory
 OUTPUT_DIR = "/home/djj/code/experiment/SeRF/results/serf_range_test"
-GROUNDTRUTH_DIR = "/home/djj/code/experiment/SeRF/results/groundtruth"
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 COMBINED_CSV = os.path.join(OUTPUT_DIR, f"results_{TIMESTAMP}.csv")
-
-# Create directories
-os.makedirs(GROUNDTRUTH_DIR, exist_ok=True)
 
 # Query ranges to test (as percentages)
 RANGE_PCTS = [1, 10, 20, 50, 100]
@@ -36,7 +32,7 @@ STRATEGY_NAME = "MaxLeap"
 # Dataset configurations: name:path (sorted by dimension)
 DATASETS = {
     # "DEEP-96": "/home/djj/code/experiment/timestampRAG/data/DEEP10M/deep_base.fvecs",
-    "SIFT-128": "/home/djj/code/experiment/SeRF/data/sift_base.fvecs",
+    # "SIFT-128": "/home/djj/code/experiment/SeRF/data/sift_base.fvecs",
     "GIST-960": "/home/djj/code/experiment/timestampRAG/data/GIST1M/gist_base.fvecs",
     "WIT-2048": "/home/djj/dataset/wit-image-random-1M.fvecs",
 }
@@ -48,26 +44,25 @@ K_SEARCH_VALUES = [100, 200, 400]
 
 # Execution settings
 DATA_SIZE = 1000000
-QUERY_NUM = 1000    # Number of queries for groundtruth generation
-GT_THREADS = 10     # Threads for GT generation (lighter memory usage)
-NUM_THREADS = 30    # Threads for parameter testing
+NUM_THREADS = 20    # Threads for parameter testing
 OMP_THREADS = 1     # Threads per task (single-threaded)
 
 # ============== TASK GENERATION ==============
 
 def generate_tasks():
-    """Generate all test tasks"""
-    tasks = []
+    """Generate all test tasks grouped by dataset"""
+    tasks_by_dataset = {}
 
     for dataset_name, dataset_path in DATASETS.items():
         if not os.path.exists(dataset_path):
             print(f"WARNING: Dataset not found: {dataset_path}")
             continue
 
+        tasks_by_dataset[dataset_name] = []
         for m in M_VALUES:
             for k in K_VALUES:
                 for k_search in K_SEARCH_VALUES:
-                    tasks.append({
+                    tasks_by_dataset[dataset_name].append({
                         'dataset': dataset_name,
                         'dataset_path': dataset_path,
                         'm': m,
@@ -76,129 +71,34 @@ def generate_tasks():
                         'data_size': DATA_SIZE,
                     })
 
-    return tasks
-
-# ============== GROUNDTRUTH GENERATION ==============
-
-def generate_groundtruth_for_range(dataset_name, dataset_path, range_pct):
-    """
-    Generate groundtruth for ONE specific range.
-    GT file is named with range percentage: {dataset}_N{N}_Q{Q}_R{range_pct}_groundtruth.csv
-    """
-    gt_file = os.path.join(GROUNDTRUTH_DIR, f"{dataset_name}_N{DATA_SIZE}_Q{QUERY_NUM}_R{range_pct}_groundtruth.csv")
-
-    # Check if already exists
-    if os.path.exists(gt_file):
-        print(f"  [SKIP] GT exists: {dataset_name} R{range_pct}%")
-        return gt_file
-
-    print(f"  [START] Generating GT: {dataset_name} R{range_pct}%...")
-
-    # Run serf_arbitrary with -generate_gt_only to generate groundtruth WITHOUT building index
-    cmd = [
-        BINARY,
-        "-dataset", "local",
-        "-N", str(DATA_SIZE),
-        "-dataset_path", dataset_path,
-        "-query_path", "",
-        "-groundtruth_path", gt_file,  # Save to this file
-        "-generate_gt_only",  # Don't build index, just generate GT
-    ]
-
-    env = os.environ.copy()
-    env['OMP_NUM_THREADS'] = str(OMP_THREADS)
-
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, env=env, check=True)
-        print(f"  [DONE] GT generated: {dataset_name} R{range_pct}%")
-        return gt_file
-    except subprocess.CalledProcessError as e:
-        print(f"  [ERROR] Failed to generate GT for {dataset_name} R{range_pct}%")
-        print(f"    stderr: {e.stderr}")
-        return None
-
-def pregenerate_all_groundtruth():
-    """Generate groundtruth for all dataset-range combinations IN PARALLEL"""
-    print("=" * 50)
-    print("Step 1: Pre-generating Groundtruth (Parallel)")
-    print("=" * 50)
-
-    # Create a list of all GT generation tasks: (dataset_name, dataset_path, range_pct)
-    gt_tasks = []
-    for dataset_name, dataset_path in DATASETS.items():
-        if not os.path.exists(dataset_path):
-            print(f"  [SKIP] Dataset not found: {dataset_path}")
-            continue
-        for range_pct in RANGE_PCTS:
-            gt_file = os.path.join(GROUNDTRUTH_DIR, f"{dataset_name}_N{DATA_SIZE}_Q{QUERY_NUM}_R{range_pct}_groundtruth.csv")
-            if not os.path.exists(gt_file):
-                gt_tasks.append((dataset_name, dataset_path, range_pct))
-
-    if not gt_tasks:
-        print("  [SKIP] All groundtruth files already exist!")
-        return
-
-    print(f"  Total tasks: {len(gt_tasks)} (datasets × ranges)")
-    print(f"  Parallel threads: {GT_THREADS}")
-    print()
-
-    # Use ThreadPoolExecutor for parallel GT generation
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-
-    with ThreadPoolExecutor(max_workers=GT_THREADS) as executor:
-        futures = {
-            executor.submit(generate_groundtruth_for_range, ds_name, ds_path, rng): (ds_name, rng)
-            for ds_name, ds_path, rng in gt_tasks
-        }
-
-        completed = 0
-        for future in as_completed(futures):
-            ds_name, rng = futures[future]
-            completed += 1
-            # Print progress more frequently for better feedback
-            if completed % 2 == 0 or completed == len(gt_tasks):
-                print(f"  [Progress] {completed}/{len(gt_tasks)} GT files generated")
-
-    print()
-    print("=" * 50)
-    print("Groundtruth generation complete!")
-    print("=" * 50 + "\n")
+    return tasks_by_dataset
 
 # ============== TASK EXECUTION ==============
 
 def run_single_task(task, result_queue, lock):
-    """Run a single serf_arbitrary test for ONE dataset + ONE range + ONE parameter set"""
+    """Run a single serf_arbitrary test"""
     dataset_name = task['dataset']
-    range_pct = task['range_pct']
     m = task['m']
     k = task['k']
     k_search = task['k_search']
 
-    output_file = f"/tmp/serf_{dataset_name}_R{range_pct}_M{m}_K{k}_KS{k_search}.txt"
-
-    # GT file is specific to this dataset and range
-    gt_file = task['gt_file']
-    if not gt_file or not os.path.exists(gt_file):
-        print(f"[ERROR] No GT file for {dataset_name} R{range_pct}%")
-        return
+    output_file = f"/tmp/serf_{dataset_name}_M{m}_K{k}_KS{k_search}.txt"
 
     # Set OMP threads for single-threaded execution
     env = os.environ.copy()
     env['OMP_NUM_THREADS'] = str(OMP_THREADS)
 
-    # Build command
+    # Build command (groundtruth generated on-the-fly)
     cmd = [
         BINARY,
         "-dataset", "local",
         "-N", str(task['data_size']),
         "-dataset_path", task['dataset_path'],
         "-query_path", "",
-        "-groundtruth_path", gt_file,
         "-index_k", str(m),
         "-ef_con", str(k),
         "-ef_max", "500",
         "-ef_search", str(k_search),
-        "-recursion_type", STRATEGY,
     ]
 
     try:
@@ -225,7 +125,7 @@ def run_single_task(task, result_queue, lock):
         if build_time and build_time > 0:
             ips = task['data_size'] / build_time
 
-        # Parse results - should only have ONE range result
+        # Parse results (all ranges)
         results = []
         with open(output_file, 'r') as f:
             for line in f:
@@ -237,34 +137,35 @@ def run_single_task(task, result_queue, lock):
                         qps = float(parts[5])
                         comps = float(parts[7])
 
-                        # Verify range matches expected
-                        calc_range_pct = (range_val * 100) // task['data_size']
-                        if calc_range_pct == range_pct:
-                            results.append({
-                                'dataset': dataset_name,
-                                'leap_strategy': STRATEGY_NAME,
-                                'param_type': 'All',
-                                'M': m,
-                                'K': k,
-                                'K_Search': k_search,
-                                'range_pct': range_pct,
-                                'recall': recall,
-                                'qps': qps,
-                                'comps': comps,
-                                'build_time': build_time,
-                                'ips': ips,
-                            })
+                        # Calculate range percentage
+                        range_pct = (range_val * 100) // task['data_size']
+
+                        results.append({
+                            'dataset': dataset_name,
+                            'leap_strategy': STRATEGY_NAME,
+                            'param_type': 'All',
+                            'M': m,
+                            'K': k,
+                            'K_Search': k_search,
+                            'range_pct': range_pct,
+                            'recall': recall,
+                            'qps': qps,
+                            'comps': comps,
+                            'build_time': build_time,
+                            'ips': ips,
+                        })
 
         # Put results in queue
         with lock:
             for res in results:
                 result_queue.put(res)
 
+        # Print summary after putting results
         if results:
             res = results[0]
-            print(f"[OK] {dataset_name} R{range_pct}%: M={m}, K={k}, KS={k_search} -> recall={res['recall']:.3f}, qps={res['qps']:.0f}")
+            print(f"  [OK] {dataset_name}: M={m:2d}, K={k:3d}, KS={k_search:3d} -> build={build_time:.2f}s, recall={res['recall']:.3f}")
         else:
-            print(f"[WARN] {dataset_name} R{range_pct}%: M={m}, K={k}, KS={k_search} -> No results parsed")
+            print(f"  [WARN] {dataset_name}: M={m}, K={k}, KS={k_search} -> No results parsed")
 
     except subprocess.CalledProcessError as e:
         print(f"[ERROR] {dataset_name}: M={m}, K={k}, K_Search={k_search} - {e}")
@@ -287,75 +188,6 @@ def worker(task_queue, result_queue, lock):
 
 # ============== MAIN ==============
 
-def run_batch_for_dataset(dataset_name, dataset_path, all_params):
-    """
-    Run all parameter+range combinations for a single dataset.
-    Tasks include GT file path specific to each range.
-    """
-    print("=" * 50)
-    print(f"Processing Dataset: {dataset_name}")
-    print("=" * 50)
-    print(f"Base dataset: {dataset_path}")
-    print(f"Total tasks: {len(all_params)}")
-    print(f"Parallel threads: {NUM_THREADS}")
-    print("=" * 50)
-    print()
-
-    # Create task queue and result queue
-    task_queue = queue.Queue()
-    result_queue = queue.Queue()
-    lock = threading.Lock()
-
-    for task in all_params:
-        task_queue.put(task)
-
-    # Start worker threads
-    threads = []
-    for _ in range(NUM_THREADS):
-        t = threading.Thread(target=worker, args=(task_queue, result_queue, lock))
-        t.start()
-        threads.append(t)
-
-    # Monitor progress and collect results
-    completed = 0
-    batch_results = []
-    total_tasks = len(all_params)
-
-    # Start a thread to collect results
-    def result_collector():
-        nonlocal completed
-        while True:
-            try:
-                result = result_queue.get(timeout=1)
-                batch_results.append(result)
-                completed += 1
-                if completed % 20 == 0:
-                    print(f"[Progress] {completed}/{total_tasks} tasks completed for {dataset_name}")
-                result_queue.task_done()
-            except queue.Empty:
-                # Only exit if all workers are done
-                if all(not t.is_alive() for t in threads):
-                    break
-
-    collector_thread = threading.Thread(target=result_collector)
-    collector_thread.start()
-
-    # Wait for all workers to complete
-    for t in threads:
-        t.join()
-
-    # Wait for result collector to finish
-    while not result_queue.empty():
-        import time
-        time.sleep(0.1)
-    collector_thread.join()
-
-    print()
-    print(f"[DONE] Dataset {dataset_name} completed: {completed} results")
-    print()
-
-    return batch_results
-
 def main():
     # Create output directory
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -363,88 +195,108 @@ def main():
     # Initialize CSV with header
     csv_header = "dataset,leap_strategy,param_type,M,K,K_Search,range_pct,recall,qps,comps,build_time,ips"
 
-    # Step 1: Pre-generate groundtruth for all dataset-range combinations IN PARALLEL
-    pregenerate_all_groundtruth()
+    # Generate all tasks grouped by dataset
+    tasks_by_dataset = generate_tasks()
 
-    # Collect all groundtruth file paths: {dataset_name: {range_pct: gt_file}}
-    gt_files_map = {}
-    for dataset_name, dataset_path in DATASETS.items():
-        if not os.path.exists(dataset_path):
-            continue
-        gt_files_map[dataset_name] = {}
-        for range_pct in RANGE_PCTS:
-            gt_file = os.path.join(GROUNDTRUTH_DIR, f"{dataset_name}_N{DATA_SIZE}_Q{QUERY_NUM}_R{range_pct}_groundtruth.csv")
-            if os.path.exists(gt_file):
-                gt_files_map[dataset_name][range_pct] = gt_file
+    # Calculate total tasks
+    total_tasks = sum(len(tasks) for tasks in tasks_by_dataset.values())
 
-    if len(gt_files_map) == 0:
-        print("ERROR: No groundtruth files generated!")
-        return
-
-    # Count total GT files
-    total_gt_files = sum(len(ranges) for ranges in gt_files_map.values())
-    print(f"Using {total_gt_files} groundtruth files ({len(gt_files_map)} datasets × {len(RANGE_PCTS)} ranges)")
+    print("=" * 50)
+    print("SeRF Range Testing - Parallel Execution (Dataset by Dataset)")
+    print("=" * 50)
+    print(f"Datasets: {list(tasks_by_dataset.keys())}")
+    print(f"Strategy: {STRATEGY_NAME}")
+    print(f"Parameter Grid: M={M_VALUES}, K={K_VALUES}, K_Search={K_SEARCH_VALUES}")
+    print(f"Total Tasks: {total_tasks}")
+    print(f"Parallel Threads: {NUM_THREADS}")
+    print(f"OMP Threads per Task: {OMP_THREADS}")
+    print(f"Output CSV: {COMBINED_CSV}")
+    print("=" * 50)
     print()
 
     # Write CSV header
     with open(COMBINED_CSV, 'w') as f:
         f.write(csv_header + '\n')
 
-    # Step 2: Process each dataset SEPARATELY with ALL ranges
-    print("=" * 50)
-    print("Step 2: Running Parameter Sweep Tests (Dataset by Dataset)")
-    print("=" * 50)
-    print(f"Datasets: {list(DATASETS.keys())}")
-    print(f"Query Ranges: {RANGE_PCTS}%")
-    print(f"Strategy: {STRATEGY_NAME}")
-    print(f"Parameter Grid: M={M_VALUES}, K={K_VALUES}, K_Search={K_SEARCH_VALUES}")
-    print(f"Parallel Threads per Dataset: {NUM_THREADS}")
-    print(f"OMP Threads per Task: {OMP_THREADS}")
-    print(f"Output CSV: {COMBINED_CSV}")
-    print("=" * 50)
-    print()
-
     # Process each dataset one by one
-    all_results = []
+    global_completed = 0
 
-    for dataset_name in gt_files_map.keys():
-        dataset_path = DATASETS[dataset_name]
-        dataset_gt_files = gt_files_map[dataset_name]
+    for dataset_idx, (dataset_name, dataset_tasks) in enumerate(tasks_by_dataset.items(), 1):
+        print("=" * 50)
+        print(f"[{dataset_idx}/{len(tasks_by_dataset)}] Processing Dataset: {dataset_name}")
+        print("=" * 50)
+        print(f"Tasks: {len(dataset_tasks)}")
+        print(f"Data path: {dataset_tasks[0]['dataset_path']}")
+        print("=" * 50)
+        print()
 
-        # Generate all tasks: parameters × ranges
-        dataset_params = []
-        for m in M_VALUES:
-            for k in K_VALUES:
-                for k_search in K_SEARCH_VALUES:
-                    for range_pct in RANGE_PCTS:
-                        if range_pct in dataset_gt_files:
-                            dataset_params.append({
-                                'dataset': dataset_name,
-                                'dataset_path': dataset_path,
-                                'range_pct': range_pct,
-                                'gt_file': dataset_gt_files[range_pct],
-                                'm': m,
-                                'k': k,
-                                'k_search': k_search,
-                                'data_size': DATA_SIZE,
-                            })
+        # Create task queue for this dataset
+        task_queue = queue.Queue()
+        result_queue = queue.Queue()
+        lock = threading.Lock()
 
-        print(f"Dataset {dataset_name}: {len(dataset_params)} tasks ({len(M_VALUES)*len(K_VALUES)*len(K_SEARCH_VALUES)} params × {len(dataset_gt_files)} ranges)")
+        for task in dataset_tasks:
+            task_queue.put(task)
 
-        # Run batch for this dataset
-        batch_results = run_batch_for_dataset(dataset_name, dataset_path, dataset_params)
-        all_results.extend(batch_results)
+        # Start worker threads
+        threads = []
+        for _ in range(NUM_THREADS):
+            t = threading.Thread(target=worker, args=(task_queue, result_queue, lock))
+            t.start()
+            threads.append(t)
 
-        # Write results for this dataset to CSV immediately
-        with open(COMBINED_CSV, 'a') as f:
-            for result in batch_results:
-                row = f"{result['dataset']},{result['leap_strategy']},{result['param_type']},{result['M']},{result['K']},{result['K_Search']},{result['range_pct']},{result['recall']},{result['qps']},{result['comps']},{result['build_time']},{result['ips']}\n"
-                f.write(row)
+        # Start a thread to write results to CSV incrementally
+        csv_lock = threading.Lock()
+        dataset_completed = 0
+
+        def result_writer():
+            nonlocal dataset_completed, global_completed
+            retry_count = 0
+            while True:
+                try:
+                    result = result_queue.get(timeout=60)  # Increased timeout for long-running tasks
+                    with csv_lock:
+                        with open(COMBINED_CSV, 'a') as f:
+                            row = f"{result['dataset']},{result['leap_strategy']},{result['param_type']},{result['M']},{result['K']},{result['K_Search']},{result['range_pct']},{result['recall']},{result['qps']},{result['comps']},{result['build_time']},{result['ips']}\n"
+                            f.write(row)
+                    dataset_completed += 1
+                    global_completed += 1
+                    retry_count = 0  # Reset retry count on success
+                    if dataset_completed % 10 == 0:
+                        print(f"  [Progress] {dataset_completed}/{len(dataset_tasks)} results collected (total: {global_completed}/{total_tasks})")
+                    result_queue.task_done()
+                except queue.Empty:
+                    # Only break if all workers are done
+                    if all(not t.is_alive() for t in threads):
+                        break
+                    else:
+                        retry_count += 1
+                        if retry_count <= 2:  # Only print first 2 retries
+                            print(f"  [Waiting] Workers still running... ({len([t for t in threads if t.is_alive()])} active)")
+                        continue
+
+        # Start result writer thread
+        writer_thread = threading.Thread(target=result_writer)
+        writer_thread.start()
+
+        # Wait for all workers to complete
+        for t in threads:
+            t.join()
+
+        # Wait for result writer to finish
+        while not result_queue.empty():
+            import time
+            time.sleep(0.1)
+        writer_thread.join()
+
+        print()
+        print(f"[DONE] Dataset {dataset_name} completed: {dataset_completed} results")
+        print()
 
     print()
     print("=" * 50)
     print("All datasets completed!")
-    print(f"Total records: {len(all_results)}")
+    print(f"Total records: {global_completed}")
     print(f"Results saved to: {COMBINED_CSV}")
     print("=" * 50)
 
