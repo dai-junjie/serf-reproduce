@@ -7,11 +7,15 @@ Datasets are processed sequentially (one at a time) for memory efficiency
 
 import subprocess
 import os
+import sys
 import threading
 import queue
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
+
+# 禁用 Python 输出缓冲，实时显示
+sys.stdout.reconfigure(line_buffering=True)
 
 # ============== CONFIGURATION ==============
 
@@ -41,7 +45,13 @@ K_SEARCH_VALUES = [100, 200, 400]
 
 # Execution settings
 DATA_SIZE = 1000000
-NUM_THREADS = 30  # Number of parallel tasks
+# 每个数据集使用不同线程数: DEEP=20, SIFT=16, GIST=10, WIT=6
+DATASET_THREADS = {
+    "DEEP-96": 24,
+    "SIFT-128": 16,
+    "GIST-960": 10,
+    "WIT-2048": 6,
+}
 OMP_THREADS = 1   # Threads per task (single-threaded)
 
 # ============== TASK GENERATION ==============
@@ -205,7 +215,7 @@ def main():
     print(f"Query Ranges: {RANGE_PCTS}%")
     print(f"Parameter Grid: M={M_VALUES}, K={K_VALUES}, K_Search={K_SEARCH_VALUES}")
     print(f"Total Tasks: {total_tasks}")
-    print(f"Parallel Threads: {NUM_THREADS}")
+    print(f"Dataset Threads: {DATASET_THREADS}")
     print(f"OMP Threads per Task: {OMP_THREADS}")
     print(f"Output CSV: {COMBINED_CSV}")
     print("=" * 50)
@@ -266,9 +276,12 @@ def main():
         writer_thread = threading.Thread(target=result_writer)
         writer_thread.start()
 
+        # Get thread count for this dataset
+        num_threads = DATASET_THREADS.get(dataset_name, 8)
+
         # Start worker threads
         threads = []
-        for i in range(NUM_THREADS):
+        for i in range(num_threads):
             t = threading.Thread(target=worker, args=(task_queue, result_queue, lock))
             t.start()
             threads.append(t)
