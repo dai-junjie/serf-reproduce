@@ -62,10 +62,10 @@ DATASETS = {
 # Parameter grid for Milvus HNSW
 # M: connectivity parameter (similar to index_k)
 # EF_CONSTRUCTION: build time parameter (similar to ef_con/k)
-# EF: search time parameter (similar to ef_search/k_search)
+# EF: search time parameter (similar to ef_search/k_search) - ONLY affects search, NOT building
 M_VALUES = [8, 16, 32, 64]
-EF_CON_VALUES = [100, 200, 400]
-EF_VALUES = [100, 200, 400]
+EF_CON_VALUES = [100, 200, 400, 800]
+EF_VALUES = [100, 200, 300, 400]  # Tested on each built index (no rebuild needed)
 
 # Execution settings
 DATA_SIZE = 1000000
@@ -108,7 +108,8 @@ def get_batch_size(dim):
 # ============== TASK GENERATION ==============
 
 def generate_tasks():
-    """Generate all test tasks grouped by dataset"""
+    """Generate all test tasks grouped by dataset
+    Only one task per (M, EF_CON) combination - EF values are tested together"""
     tasks_by_dataset = {}
 
     for dataset_name, dataset_config in DATASETS.items():
@@ -120,16 +121,16 @@ def generate_tasks():
         tasks_by_dataset[dataset_name] = []
         for m in M_VALUES:
             for ef_con in EF_CON_VALUES:
-                for ef in EF_VALUES:
-                    tasks_by_dataset[dataset_name].append({
-                        'dataset': dataset_name,
-                        'dataset_path': dataset_path,
-                        'dim': dataset_config["dim"],
-                        'm': m,
-                        'ef_con': ef_con,
-                        'ef': ef,
-                        'data_size': DATA_SIZE,
-                    })
+                # Only create one task per (M, EF_CON), with all EF values tested together
+                tasks_by_dataset[dataset_name].append({
+                    'dataset': dataset_name,
+                    'dataset_path': dataset_path,
+                    'dim': dataset_config["dim"],
+                    'm': m,
+                    'ef_con': ef_con,
+                    'ef_list': EF_VALUES,  # List of all EF values to test
+                    'data_size': DATA_SIZE,
+                })
 
     return tasks_by_dataset
 
@@ -183,9 +184,9 @@ class MilvusCollectionManager:
 
         return self.collection
 
-    def get_test_collection(self, index_params):
-        """Create or get a test collection with specific index"""
-        test_collection_name = f"{self.base_collection_name}_M{index_params['params']['M']}_EFCON{index_params['params']['efConstruction']}"
+    def get_test_collection(self, m, ef_con):
+        """Create or get a test collection with specific index (only M and efConstruction)"""
+        test_collection_name = f"{self.base_collection_name}_M{m}_EFCON{ef_con}"
 
         if utility.has_collection(test_collection_name):
             collection = Collection(test_collection_name)
@@ -224,7 +225,12 @@ class MilvusCollectionManager:
         collection.flush()
 
         # Build index
-        print(f"  [Milvus] Building index: M={index_params['params']['M']}, efConstruction={index_params['params']['efConstruction']}")
+        index_params = {
+            "metric_type": METRIC_TYPE,
+            "index_type": INDEX_TYPE,
+            "params": {"M": m, "efConstruction": ef_con}
+        }
+        print(f"  [Milvus] Building index: M={m}, efConstruction={ef_con}")
         t0 = time.time()
         collection.create_index(field_name="embedding", index_params=index_params)
         build_time = time.time() - t0
@@ -253,30 +259,17 @@ class MilvusCollectionManager:
 # ============== TASK EXECUTION ==============
 
 def run_single_task(task, result_queue, lock, collection_manager):
-    """Run a single Milvus test task"""
+    """Run a single Milvus test task - builds index once and tests with multiple EF values"""
     dataset_name = task['dataset']
     m = task['m']
     ef_con = task['ef_con']
-    ef = task['ef']
-
-    # Build index params
-    index_params = {
-        "metric_type": METRIC_TYPE,
-        "index_type": INDEX_TYPE,
-        "params": {"M": m, "efConstruction": ef_con}
-    }
-
-    # Build search params
-    search_params = {
-        "metric_type": METRIC_TYPE,
-        "params": {"ef": ef}
-    }
+    ef_list = task['ef_list']  # List of EF values to test
 
     test_collection_name = f"{collection_manager.base_collection_name}_M{m}_EFCON{ef_con}"
 
     try:
-        # Get or create test collection with index
-        collection, build_time = collection_manager.get_test_collection(index_params)
+        # Get or create test collection with index (only depends on M and efConstruction)
+        collection, build_time = collection_manager.get_test_collection(m, ef_con)
 
         # Calculate IPS
         ips = None
@@ -295,79 +288,90 @@ def run_single_task(task, result_queue, lock, collection_manager):
         np.random.seed(42)
 
         results = []
-        for range_pct in RANGE_PCTS:
-            range_width = int(actual_size * range_pct / 100)
-            # Ensure at least 1 element
-            range_width = max(1, range_width)
-            # Random start: ensure [l_bound, l_bound + range_width] fits in [0, actual_size)
-            max_l_bound = actual_size - range_width
-            l_bound = np.random.randint(0, max(max_l_bound, 1))
-            r_bound = l_bound + range_width - 1
-            expr = f"id >= {l_bound} && id <= {r_bound}"
 
-            # Brute force ground truth
-            range_vectors = vectors[l_bound:r_bound+1]
-            distances = np.sum((query_vector - range_vectors) ** 2, axis=1)
-            gt_indices_rel = np.argpartition(distances, TOP_K)[:TOP_K]
-            gt_ids = set(l_bound + gt_indices_rel)
+        # Test with each EF value on the same index
+        for ef in ef_list:
+            # Build search params for this EF
+            search_params = {
+                "metric_type": METRIC_TYPE,
+                "params": {"ef": ef}
+            }
 
-            # Warm up
-            try:
-                collection.search(query_vector, "embedding", search_params, TOP_K, expr=expr)
-            except:
-                pass
+            for range_pct in RANGE_PCTS:
+                range_width = int(actual_size * range_pct / 100)
+                # Ensure at least 1 element
+                range_width = max(1, range_width)
+                # Random start: ensure [l_bound, l_bound + range_width] fits in [0, actual_size)
+                max_l_bound = actual_size - range_width
+                l_bound = np.random.randint(0, max(max_l_bound, 1))
+                r_bound = l_bound + range_width - 1
+                expr = f"id >= {l_bound} && id <= {r_bound}"
 
-            # Measure search performance
-            t_start = time.time()
-            search_results = []
-            for _ in range(RUNS_PER_TEST):
-                res = collection.search(
-                    data=query_vector,
-                    anns_field="embedding",
-                    param=search_params,
-                    limit=TOP_K,
-                    expr=expr,
-                    output_fields=["id"]
-                )
-                search_results.append(res)
-            t_end = time.time()
+                # Brute force ground truth
+                range_vectors = vectors[l_bound:r_bound+1]
+                distances = np.sum((query_vector - range_vectors) ** 2, axis=1)
+                gt_indices_rel = np.argpartition(distances, TOP_K)[:TOP_K]
+                gt_ids = set(l_bound + gt_indices_rel)
 
-            avg_latency = (t_end - t_start) / RUNS_PER_TEST * 1000
-            qps = 1.0 / ((t_end - t_start) / RUNS_PER_TEST)
+                # Warm up
+                try:
+                    collection.search(query_vector, "embedding", search_params, TOP_K, expr=expr)
+                except:
+                    pass
 
-            # Calculate recall
-            result_ids = set(int(hit.id) for hit in search_results[0][0])
-            recall = len(result_ids & gt_ids) / TOP_K if TOP_K > 0 else 0.0
+                # Measure search performance
+                t_start = time.time()
+                search_results = []
+                for _ in range(RUNS_PER_TEST):
+                    res = collection.search(
+                        data=query_vector,
+                        anns_field="embedding",
+                        param=search_params,
+                        limit=TOP_K,
+                        expr=expr,
+                        output_fields=["id"]
+                    )
+                    search_results.append(res)
+                t_end = time.time()
 
-            results.append({
-                'dataset': dataset_name,
-                'method': 'Milvus',
-                'param_type': 'All',
-                'M': m,
-                'EF_Construction': ef_con,
-                'EF': ef,
-                'range_pct': range_pct,
-                'recall': recall,
-                'qps': qps,
-                'comps': 0,  # Milvus doesn't expose distance computations
-                'build_time': build_time,
-                'ips': ips,
-            })
+                avg_latency = (t_end - t_start) / RUNS_PER_TEST * 1000
+                qps = 1.0 / ((t_end - t_start) / RUNS_PER_TEST)
+
+                # Calculate recall
+                result_ids = set(int(hit.id) for hit in search_results[0][0])
+                recall = len(result_ids & gt_ids) / TOP_K if TOP_K > 0 else 0.0
+
+                results.append({
+                    'dataset': dataset_name,
+                    'method': 'Milvus',
+                    'param_type': 'All',
+                    'M': m,
+                    'EF_Construction': ef_con,
+                    'EF': ef,
+                    'range_pct': range_pct,
+                    'recall': recall,
+                    'qps': qps,
+                    'comps': 0,  # Milvus doesn't expose distance computations
+                    'build_time': build_time,
+                    'ips': ips,
+                })
 
         # Put results in queue
         with lock:
             for res in results:
                 result_queue.put(res)
 
-        # Print summary
+        # Print summary (show EF list being tested)
         if results:
-            res = results[0]
-            print(f"  [OK] {dataset_name}: M={m:2d}, EFC={ef_con:3d}, EF={ef:3d} -> build={build_time:.2f}s, recall={res['recall']:.3f}")
+            ef_str = ",".join(map(str, ef_list))
+            print(f"  [OK] {dataset_name}: M={m:2d}, EFC={ef_con:3d}, EF=[{ef_str}] -> build={build_time:.2f}s ({len(results)} results)")
         else:
-            print(f"  [WARN] {dataset_name}: M={m}, EFC={ef_con}, EF={ef} -> No results")
+            ef_str = ",".join(map(str, ef_list))
+            print(f"  [WARN] {dataset_name}: M={m}, EFC={ef_con}, EF=[{ef_str}] -> No results")
 
     except Exception as e:
-        print(f"[ERROR] {dataset_name}: M={m}, EFC={ef_con}, EF={ef} - {e}")
+        ef_str = ",".join(map(str, ef_list))
+        print(f"[ERROR] {dataset_name}: M={m}, EFC={ef_con}, EF=[{ef_str}] - {e}")
         import traceback
         traceback.print_exc()
     finally:
