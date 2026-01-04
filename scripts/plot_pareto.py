@@ -24,7 +24,7 @@ SERF_INPUT_FILE = "/home/djj/code/experiment/SeRF/results/autodl/results_2026010
 OUTPUT_DIR = "/home/djj/code/experiment/SeRF/results/autodl/plots_pareto"
 
 # 要绘制的 Range 列表
-RANGE_PCTS = [1, 10, 20, 50, 100]
+RANGE_PCTS = [0.1, 1, 10, 20, 50, 100]
 
 # 数据集列表（需要HNSW和SeRF都有的数据集）
 DATASETS = ["GIST-960", "WIT-2048"]
@@ -95,7 +95,7 @@ def plot_hnsw_curves(df, dataset, output_dir):
     fig.suptitle(f'HNSW Evaluation: {dataset}\nRecall vs QPS (Pareto Frontier)',
                  fontsize=16, fontweight='bold', y=0.98)
 
-    # 遍历 5 个 range
+    # 遍历 6 个 range
     for idx, range_pct in enumerate(RANGE_PCTS):
         row = idx // 3
         col = idx % 3
@@ -143,9 +143,8 @@ def plot_hnsw_curves(df, dataset, output_dir):
         if idx == 0:
             ax.legend(loc='lower left', framealpha=0.95, edgecolor='gray', fontsize=9)
 
-    # 隐藏最后一个子图
-    if len(RANGE_PCTS) < 6:
-        axes[1, 2].set_axis_off()
+    # Now we have exactly 6 ranges (0.1, 1, 10, 20, 50, 100), so all 2x3 subplots are used
+    # No need to hide any subplot anymore
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
 
@@ -226,9 +225,8 @@ def plot_comparison(hnsw_df, serf_df, dataset, output_dir):
         if idx == 0:
             ax.legend(loc='lower left', framealpha=0.95, edgecolor='gray', fontsize=9)
 
-    # 隐藏最后一个子图
-    if len(RANGE_PCTS) < 6:
-        axes[1, 2].set_axis_off()
+    # Now we have exactly 6 ranges (0.1, 1, 10, 20, 50, 100), so all 2x3 subplots are used
+    # No need to hide any subplot anymore
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
 
@@ -255,11 +253,11 @@ def plot_combined_comparison(hnsw_df, serf_df, output_dir):
     dataset_positions = [(0, 0), (0, 1)]
 
     # 添加不同range的GIST-960对比
-    ranges_to_plot = [1, 10, 20, 50, 100]
-    positions = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1)]
+    ranges_to_plot = [0.1, 1, 10, 20, 50, 100]
 
-    for idx, (range_pct, pos) in enumerate(zip(ranges_to_plot, positions)):
-        row, col = pos
+    for idx, range_pct in enumerate(ranges_to_plot):
+        row = idx // 3
+        col = idx % 3
         ax = axes[row, col]
 
         # 筛选 GIST-960 数据
@@ -307,8 +305,8 @@ def plot_combined_comparison(hnsw_df, serf_df, output_dir):
         if idx == 0:
             ax.legend(loc='lower left', framealpha=0.95, edgecolor='gray', fontsize=9)
 
-    # 隐藏最后一个子图
-    axes[1, 2].set_axis_off()
+    # Now we have exactly 6 ranges, so all 2x3 subplots are used
+    # No need to hide any subplot anymore
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
 

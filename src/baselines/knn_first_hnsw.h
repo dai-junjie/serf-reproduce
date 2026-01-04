@@ -190,6 +190,12 @@ class KnnFirstWrapper : BaseIndex {
 
   void saveIndex(const string &save_path) { hnsw_index->saveIndex(save_path); }
 
+  void loadIndex(const string &load_path) {
+    space = new hnswlib_incre::L2Space(data_wrapper->data_dim);
+    hnsw_index = new hnswlib_incre::HierarchicalNSW<float>(space, load_path);
+    countNeighbrs();
+  }
+
   ~KnnFirstWrapper() {
     delete hnsw_index;
     delete index_info;

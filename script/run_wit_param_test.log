@@ -1,5 +1,0 @@
-nohup: 忽略输入
-run_serf_range_test.sh: 行 1: nohup:: 未找到命令
-run_serf_range_test.sh: 行 2: ========================================: 未找到命令
-run_serf_range_test.sh: 行 3: 未预期的记号 "(" 附近有语法错误
-run_serf_range_test.sh: 行 3: `WIT-Image Parameter Testing (Paper Setup)'
